@@ -1,0 +1,41 @@
+.placeholders-section {
+  padding: 4rem 0 8rem;
+}
+
+.placeholders-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+}
+
+.placeholder-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.placeholder-image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #E5E7EB;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.geometric-shape {
+  width: 60%;
+  height: 60%;
+  background: #D1D5DB;
+  transform: rotate(45deg);
+}
+
+.placeholder-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--color-grey-mid);
+  letter-spacing: 0.15em;
+}

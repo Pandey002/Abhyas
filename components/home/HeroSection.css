@@ -1,0 +1,26 @@
+.hero-section {
+  padding: 64px 0 48px;
+  text-align: center; /* Center for structured symmetry */
+}
+
+.hero-inner {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.hero-title {
+  font-size: 3.5rem;
+  color: var(--color-navy);
+  margin-bottom: 24px;
+  letter-spacing: -0.01em;
+}
+
+.hero-subtitle {
+  font-size: 1.25rem;
+  color: var(--color-grey-dark);
+  font-style: italic;
+  font-family: var(--font-sans);
+  opacity: 0.8;
+  max-width: 600px;
+  margin: 0 auto;
+}

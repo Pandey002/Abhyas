@@ -1,0 +1,90 @@
+.upload-zone {
+  min-height: 180px; /* Redundant height reduced slightly */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--color-border);
+  background: var(--color-surface);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-bottom: 48px;
+  width: 100%;
+  max-width: 800px;
+  margin: 64px auto 48px; /* Increased top margin for hierarchy */
+}
+
+.upload-zone:hover, .upload-zone.drag-active {
+  border-color: var(--color-coral);
+  background: rgba(232, 93, 74, 0.02);
+  transform: scale(1.01);
+}
+
+.upload-zone.has-file {
+  border-style: solid;
+  border-color: var(--color-emerald);
+  background: rgba(16, 185, 129, 0.02);
+}
+
+.file-input {
+  display: none;
+}
+
+.upload-label {
+  cursor: pointer;
+  display: flex;
+  align-items: center; /* Change to horizontal for better space use */
+  gap: 32px;
+  width: 100%;
+  padding: 0 40px;
+}
+
+.upload-icon-container {
+  color: var(--color-grey-mid);
+  transition: color 0.3s ease;
+  flex-shrink: 0;
+}
+
+.upload-zone:hover .upload-icon-container {
+  color: var(--color-coral);
+}
+
+.upload-zone.has-file .upload-icon-container {
+  color: var(--color-emerald);
+}
+
+.upload-text {
+  text-align: left; /* Aligns with horizontal layout */
+  flex-grow: 1;
+}
+
+.main-text {
+  font-size: 1.1rem;
+  color: var(--color-navy);
+  margin-bottom: 4px;
+  font-family: var(--font-serif);
+}
+
+.file-name {
+  font-size: 1.5rem;
+  font-family: var(--font-serif);
+  color: var(--color-navy);
+  line-height: 1.2;
+}
+
+.sub-text {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-coral);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 600px) {
+  .upload-label {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+  .upload-text {
+    text-align: center;
+  }
+}

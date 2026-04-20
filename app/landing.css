@@ -1,0 +1,86 @@
+.landing-wrapper {
+  min-height: calc(100vh - 80px); /* Subtract header */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 48px;
+  background: var(--color-parchment);
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+
+.landing-content {
+  max-width: 900px;
+  position: relative;
+  z-index: 2;
+}
+
+.manifesto-badge {
+  color: var(--color-coral);
+  display: inline-block;
+}
+
+.grand-title {
+  font-size: 5.5rem; /* Massive high-end title */
+  color: var(--color-navy);
+  line-height: 1.1;
+  margin-bottom: 32px;
+  letter-spacing: -0.02em;
+}
+
+.grand-subtitle {
+  font-family: var(--font-sans);
+  font-size: 1.85rem; /* Larger and impactful */
+  color: var(--color-grey-dark);
+  margin-bottom: 64px;
+  font-weight: 300;
+}
+
+.grand-subtitle em {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 500;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+}
+
+/* Grand variant for buttons */
+.cta-button.grand {
+  padding: 18px 48px;
+  font-size: 1.1rem;
+  border-radius: 12px;
+}
+
+.landing-visual {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.glow-aura {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(232, 93, 74, 0.05) 0%, rgba(232, 93, 74, 0) 70%);
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  filter: blur(80px);
+}
+
+@media (max-width: 768px) {
+  .grand-title { font-size: 3.5rem; }
+  .grand-subtitle { font-size: 1.4rem; }
+  .hero-actions { flex-direction: column; width: 100%; max-width: 320px; margin: 0 auto; }
+}

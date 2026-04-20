@@ -1,0 +1,121 @@
+.header {
+  height: 80px; /* Increased from 72px */
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-inner {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brand-grand {
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+}
+
+.brand-mark-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 14px; /* Increased gap */
+  position: relative;
+  padding-bottom: 10px;
+}
+
+.brand-diamond {
+  width: 10px; /* Increased from 8px */
+  height: 10px;
+  background: var(--color-coral);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+.brand-text {
+  font-family: var(--font-serif);
+  font-size: 1.8rem; /* Increased from 1.6rem */
+  font-weight: 600;
+  color: var(--color-navy);
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+
+/* Centered Coral Accent Dash */
+.brand-mark-wrapper::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 48px; /* Increased from 40px */
+  height: 2px;
+  background: var(--color-coral);
+  border-radius: 2px;
+}
+
+.nav {
+  display: flex;
+  gap: 48px; /* Increased from 32px */
+}
+
+.nav a {
+  font-family: var(--font-sans);
+  font-size: 1rem; /* Increased from 0.875rem */
+  font-weight: 600; /* Bolder for visibility */
+  color: var(--color-grey-mid);
+  text-decoration: none;
+  position: relative;
+  padding: 6px 0;
+  transition: color 0.2s ease;
+}
+
+.nav a:hover, .nav a.active {
+  color: var(--color-navy);
+}
+
+.nav a.active::after {
+  content: '';
+  position: absolute;
+  bottom: -22px;
+  left: 0;
+  width: 100%;
+  height: 2.5px;
+  background: var(--color-coral);
+}
+
+.user-section {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  color: var(--color-grey-mid);
+}
+
+.user-section a {
+  display: flex;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.user-section a:hover, .user-section a.active-icon {
+  color: var(--color-navy);
+  transform: scale(1.1);
+}
+
+@media (max-width: 768px) {
+  .brand-text {
+    font-size: 1.5rem;
+  }
+  .nav {
+    gap: 24px;
+  }
+}

@@ -1,0 +1,84 @@
+.donut-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+  width: 100%;
+}
+
+.donut-wrapper.profile {
+  justify-content: flex-start;
+  padding: 0;
+}
+
+.donut-wrapper.compact {
+  flex-direction: column;
+  gap: 1.5rem;
+  text-align: center;
+}
+
+.donut-svg-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.donut-svg {
+  transform: rotate(-90deg);
+}
+
+.donut-segment {
+  transition: stroke-dashoffset 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.donut-percentage {
+  transform: rotate(90deg);
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  fill: var(--color-navy);
+}
+
+.profile .donut-percentage {
+  font-size: 1.75rem;
+}
+
+.donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.compact .donut-legend {
+  flex-direction: row;
+  justify-content: center;
+  gap: 16px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.875rem;
+  font-family: var(--font-sans);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dot-mastered { background-color: var(--color-emerald); }
+.dot-shaky { background-color: var(--color-coral); }
+.dot-notstarted { background-color: var(--color-navy); }
+
+.label {
+  color: var(--color-grey-mid);
+  width: 90px;
+}
+
+.compact .label { width: auto; }
+
+.value {
+  font-weight: 700;
+  color: var(--color-navy);
+}

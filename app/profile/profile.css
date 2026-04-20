@@ -1,0 +1,71 @@
+.profile-hero-section {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  margin-bottom: 48px;
+}
+
+.profile-avatar {
+  width: 96px;
+  height: 96px;
+  background: var(--color-navy);
+  color: var(--color-parchment);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.hero-name {
+  font-size: 3rem;
+  color: var(--color-navy);
+  position: relative;
+  line-height: 1.1;
+  margin-bottom: 8px;
+}
+
+.hero-accent {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 120px;
+  height: 4px;
+  background: var(--color-coral);
+  border-radius: 2px;
+}
+
+.hero-subtitle {
+  color: var(--color-grey-mid);
+}
+
+.section-container {
+  margin-bottom: 48px;
+}
+
+.mastery-aggregate-card {
+  width: 100%;
+}
+
+.motto-divider {
+  text-align: center;
+  margin: 64px 0;
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  color: var(--color-grey-mid);
+  font-style: italic;
+  position: relative;
+}
+
+.motto-divider::before, 
+.motto-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 100px;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.motto-divider::before { left: 0; }
+.motto-divider::after { right: 0; }
