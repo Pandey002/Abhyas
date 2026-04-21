@@ -70,10 +70,6 @@ Run the SQL migration found in `supabase/schema.sql` inside your Supabase SQL ed
 npm run dev
 ```
 
----
-
-## ⚖️ License
-Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 
