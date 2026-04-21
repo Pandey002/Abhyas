@@ -20,6 +20,9 @@ const IntentSelector: React.FC<IntentSelectorProps> = ({ onIntentSelect, onProce
 
   return (
     <div className="intent-selector-container">
+      <div className="label-caps text-center mb-12" style={{ color: 'var(--color-grey-mid)', fontSize: '0.8rem', letterSpacing: '0.2em' }}>
+        Select Extraction Intent
+      </div>
       <div className="intent-grid">
         <div 
           className={`intent-card card ${activeIntent === 'quick' ? 'selected' : ''}`}

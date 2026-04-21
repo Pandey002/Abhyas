@@ -51,7 +51,7 @@ const CurriculumSelector: React.FC<CurriculumSelectorProps> = ({ onCurriculumSel
 
   return (
     <div className="curriculum-selector-container">
-      <div className="label-caps mb-6 text-center" style={{ color: 'var(--color-grey-mid)', fontSize: '0.9rem' }}>
+      <div className="label-caps text-center mb-12" style={{ color: 'var(--color-grey-mid)', fontSize: '0.8rem', letterSpacing: '0.2em' }}>
         Select Curriculum Target
       </div>
       <div className="curriculum-grid">
