@@ -49,9 +49,9 @@ export default function UploadPage() {
         alert("Extraction failed: " + (errorMsg || "Unknown error"));
         setIsCooking(false);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Extraction error:", error);
-      alert("An error occurred during extraction.");
+      alert(`CRITICAL_FETCH_ERROR: ${error.message || "Unknown network error"}`);
       setIsCooking(false);
     }
   };
