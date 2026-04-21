@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import HeroSection from '@/components/home/HeroSection';
 import UploadZone from '@/components/home/UploadZone';
+import { supabase } from '@/lib/supabaseClient';
 import IntentSelector from '@/components/home/IntentSelector';
 import CurriculumSelector from '@/components/home/CurriculumSelector';
 import LoadingOverlay from '@/components/ui/LoadingOverlay';
@@ -29,15 +30,32 @@ export default function UploadPage() {
 
     setIsCooking(true);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('intent', intent);
-      formData.append('curriculum', curriculum);
-      formData.append('topic', file.name.replace('.pdf', '')); 
+      // 1. Upload to Supabase Storage first (Bypasses Vercel 4.5MB limit)
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `source-materials/${fileName}`;
 
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('source-materials')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        console.error("Storage upload error:", uploadError);
+        alert(`STORAGE_ERROR: ${uploadError.message}. Make sure the 'source-materials' bucket exists in Supabase.`);
+        setIsCooking(false);
+        return;
+      }
+
+      // 2. Call extraction API with the storage path
       const response = await fetch('/api/extract', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          storagePath: filePath,
+          intent,
+          curriculum,
+          topic: file.name.replace('.pdf', '')
+        }),
       });
 
       const result = await response.json();

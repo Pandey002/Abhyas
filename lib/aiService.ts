@@ -48,7 +48,7 @@ const FLASHCARD_SCHEMA = {
   required: ["cards"]
 };
 
-export async function generateFlashcards(req: ExtractionRequest): Promise<Partial<Flashcard>[]> {
+export async function generateFlashcards(req: ExtractionRequest, pdfBuffer?: Buffer): Promise<Partial<Flashcard>[]> {
   const { topic, intent, content, curriculum } = req;
   
   let curriculumInstruction = "";
@@ -69,18 +69,16 @@ export async function generateFlashcards(req: ExtractionRequest): Promise<Partia
       curriculumInstruction = "Extract comprehensive, well-structured flashcards covering key concepts, definitions, and relationships in the material.";
   }
 
-  const userPrompt = intent === 'quick' 
+  const basePrompt = intent === 'quick' 
     ? `Create EXACTLY 10 essential flashcards for the topic "${topic}". Target Curriculum: ${curriculum}.
        ${curriculumInstruction}
        You MUST generate exactly 10 cards, not more, not less. Focus on the absolute core concepts and definitions. One concept per card.
-       Front: Question. Back: Direct, 2-line answer.
-       Content: ${content}`
+       Front: Question. Back: Direct, 2-line answer.`
     : `Create 25-30 comprehensive flashcards for the topic "${topic}". Target Curriculum: ${curriculum}.
        ${curriculumInstruction}
        Cover edge cases, specific relationships, and step-by-step logic.
        Include "How does X affect Y?" and "What happens if Z is removed?" type cards.
-       Provide 2-3 worked examples.
-       Content: ${content}`;
+       Provide 2-3 worked examples.`;
 
   try {
     const model = genAI.getGenerativeModel({
@@ -91,10 +89,23 @@ export async function generateFlashcards(req: ExtractionRequest): Promise<Partia
       },
     });
 
+    const parts: any[] = [{ text: SYSTEM_PROMPT + "\n\n" + basePrompt }];
+
+    if (pdfBuffer) {
+      console.log("AI_SERVICE: Using native PDF analysis...");
+      parts.push({
+        inlineData: {
+          data: pdfBuffer.toString("base64"),
+          mimeType: "application/pdf"
+        }
+      });
+    } else {
+      console.log("AI_SERVICE: Using text-based analysis...");
+      parts.push({ text: `Content to analyze: ${content}` });
+    }
+
     const result = await model.generateContent({
-      contents: [
-        { role: "user", parts: [{ text: SYSTEM_PROMPT + "\n\n" + userPrompt }] }
-      ]
+      contents: [{ role: "user", parts }]
     });
 
     const responseText = result.response.text();
@@ -102,7 +113,6 @@ export async function generateFlashcards(req: ExtractionRequest): Promise<Partia
     return parsed.cards || [];
   } catch (e: any) {
     console.error("Failed to generate or parse Gemini response:", e);
-    // Throw the error so the API route can catch it and return a proper error message to the UI
     throw new Error(e.message || "Failed to generate flashcards from AI service");
   }
 }

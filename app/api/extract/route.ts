@@ -1,30 +1,63 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { processPDF } from '@/lib/ingestion';
-import { supabase } from '@/lib/supabaseClient';
+import { supabaseAdmin } from '@/lib/supabaseService';
+import { generateFlashcards } from '@/lib/aiService';
+import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(req: NextRequest) {
   try {
-    const formData = await req.formData();
-    const file = formData.get('file') as File;
-    const topic = formData.get('topic') as string || 'Untitled Archive';
-    const intent = (formData.get('intent') as 'quick' | 'deep') || 'quick';
-    const curriculum = formData.get('curriculum') as string || 'General';
+    const { storagePath, topic, intent, curriculum } = await req.json();
 
-    if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    if (!storagePath) {
+      return NextResponse.json({ error: 'No storage path provided' }, { status: 400 });
     }
 
-    console.log('API: Received file:', file.name, 'topic:', topic, 'intent:', intent, 'curriculum:', curriculum);
-    const buffer = Buffer.from(await file.arrayBuffer());
+    console.log('API: Processing large PDF from storage:', storagePath);
 
-    // 1. Process PDF and generate cards
-    console.log('API: Starting PDF processing...');
-    const cards = await processPDF(buffer, topic, intent, curriculum);
-    console.log('API: Processing complete. Generated', cards.length, 'cards.');
+    // 1. Download file from Supabase Storage using Admin Client
+    const { data: fileBuffer, error: downloadError } = await supabaseAdmin
+      .storage
+      .from('source-materials')
+      .download(storagePath);
 
-    // 2. Create Deck in Supabase
+    if (downloadError) {
+      console.error('API: Storage Download Error:', downloadError);
+      throw new Error(`STORAGE_DOWNLOAD_ERROR: ${downloadError.message}`);
+    }
+
+    const buffer = Buffer.from(await fileBuffer.arrayBuffer());
+
+    // 2. Process PDF and generate cards using native Gemini PDF support
+    console.log('API: Starting Native Gemini PDF processing...');
+    const rawCards = await generateFlashcards({
+      topic,
+      intent,
+      content: "", // We pass buffer instead
+      curriculum
+    }, buffer);
+    
+    console.log('API: AI Processing complete. Generated', rawCards.length, 'cards.');
+
+    // Enrich cards with defaults (Since we bypassed ingestion.ts)
+    const cards = rawCards.map(card => ({
+      id: uuidv4(),
+      front: card.front || "Empty Question",
+      back: card.back || "Empty Answer",
+      type: (card.type as any) || "concept",
+      tags: card.tags || [],
+      easeFactor: 2.5,
+      intervalDays: 1,
+      repetitions: 0,
+      status: "not_started",
+      totalReviews: 0,
+      nextReviewDate: new Date().toISOString().slice(0, 10),
+      lastReviewDate: null,
+      deckId: "",
+      createdAt: new Date().toISOString()
+    }));
+
+    // 3. Create Deck in Supabase
     console.log('API: Creating deck in Supabase...');
-    const { data: deck, error: deckError } = await supabase
+    const { data: deck, error: deckError } = await supabaseAdmin
       .from('decks')
       .insert({
         title: topic,
@@ -39,11 +72,10 @@ export async function POST(req: NextRequest) {
       console.error('API: Supabase Deck Error:', deckError);
       throw deckError;
     }
-    console.log('API: Deck created with ID:', deck.id);
 
-    // 3. Save Cards to Supabase
+    // 4. Save Cards to Supabase
     console.log('API: Saving cards to Supabase...');
-    const { error: cardError } = await supabase
+    const { error: cardError } = await supabaseAdmin
       .from('flashcards')
       .insert(cards.map(card => ({
         id: card.id,
@@ -62,11 +94,11 @@ export async function POST(req: NextRequest) {
         created_at: card.createdAt
       })));
 
-    if (cardError) {
-      console.error('API: Supabase Card Error:', cardError);
-      throw cardError;
-    }
-    console.log('API: All cards saved successfully.');
+    if (cardError) throw cardError;
+
+    // 5. Cleanup: Delete the source file from storage after processing
+    console.log('API: Cleaning up storage file...');
+    await supabaseAdmin.storage.from('source-materials').remove([storagePath]);
 
     return NextResponse.json({ 
       success: true, 
