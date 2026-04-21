@@ -1,43 +1,41 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabaseService';
-import { generateFlashcards } from '@/lib/aiService';
+import { NextRequest, NextResponse } from "next/server";
+import { generateFlashcards } from "@/lib/aiService";
+import { supabaseAdmin } from "@/lib/supabaseService";
+import { ExtractionRequest } from "@/types";
 import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(req: NextRequest) {
   try {
-    const { storagePath, topic, intent, curriculum } = await req.json();
+    const body = await req.json();
+    const { storagePath, imageUrls, topic, curriculum, ...extractParams } = body;
 
-    if (!storagePath) {
-      return NextResponse.json({ error: 'No storage path provided' }, { status: 400 });
+    let finalImageUrls: string[] = imageUrls || [];
+
+    // If a storage path was provided, download it to get the image/PDF
+    if (storagePath) {
+      console.log("API: Handling storage path flow...");
+      const { data, error } = await supabaseAdmin.storage
+        .from("source-materials")
+        .download(storagePath);
+
+      if (error) throw new Error(`Storage download failed: ${error.message}`);
+      
+      // Convert buffer to base64 for the vision model
+      const buffer = Buffer.from(await data.arrayBuffer());
+      const base64Image = `data:image/jpeg;base64,${buffer.toString('base64')}`;
+      finalImageUrls.push(base64Image);
     }
 
-    console.log('API: Processing large PDF from storage:', storagePath);
+    console.log(`API: Processing extraction for ${finalImageUrls.length} images...`);
 
-    // 1. Download file from Supabase Storage using Admin Client
-    const { data: fileBuffer, error: downloadError } = await supabaseAdmin
-      .storage
-      .from('source-materials')
-      .download(storagePath);
-
-    if (downloadError) {
-      console.error('API: Storage Download Error:', downloadError);
-      throw new Error(`STORAGE_DOWNLOAD_ERROR: ${downloadError.message}`);
-    }
-
-    const buffer = Buffer.from(await fileBuffer.arrayBuffer());
-
-    // 2. Process PDF and generate cards using native Gemini PDF support
-    console.log('API: Starting Native Gemini PDF processing...');
+    // 1. Generate Flashcards using AI
     const rawCards = await generateFlashcards({
       topic,
-      intent,
-      content: "", // We pass buffer instead
-      curriculum
-    }, buffer);
-    
-    console.log('API: AI Processing complete. Generated', rawCards.length, 'cards.');
+      curriculum,
+      ...extractParams
+    }, finalImageUrls);
 
-    // Enrich cards with defaults (Since we bypassed ingestion.ts)
+    // Enrich cards
     const cards = rawCards.map(card => ({
       id: uuidv4(),
       front: card.front || "Empty Question",
@@ -55,8 +53,7 @@ export async function POST(req: NextRequest) {
       createdAt: new Date().toISOString()
     }));
 
-    // 3. Create Deck in Supabase
-    console.log('API: Creating deck in Supabase...');
+    // 2. Create Deck in Supabase
     const { data: deck, error: deckError } = await supabaseAdmin
       .from('decks')
       .insert({

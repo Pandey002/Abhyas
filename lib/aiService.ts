@@ -1,17 +1,17 @@
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import Groq from "groq-sdk";
 import { ExtractionRequest, Flashcard } from "@/types";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "" });
 
 const SYSTEM_PROMPT = `
 You are a "Master Teacher" AI focused on pedagogical depth and active recall.
-Your goal is to transform the provided text into high-quality flashcards.
+Your goal is to transform the provided images of study material into high-quality flashcards.
 - Avoid passive labels.
 - Focus on the "Why", "How", and relationships.
 - Use Step-by-step logic for worked examples.
 - Call out common pitfalls.
 
-Return ONLY a valid JSON object containing a "cards" array of flashcard objects:
+Return ONLY a valid JSON object containing a "cards" array of flashcard objects.
 {
   "cards": [
     {
@@ -24,131 +24,53 @@ Return ONLY a valid JSON object containing a "cards" array of flashcard objects:
 }
 `;
 
-// Define schema for structured output to ensure reliability
-const FLASHCARD_SCHEMA = {
-  type: SchemaType.OBJECT,
-  properties: {
-    cards: {
-      type: SchemaType.ARRAY,
-      items: {
-        type: SchemaType.OBJECT,
-        properties: {
-          front: { type: SchemaType.STRING },
-          back: { type: SchemaType.STRING },
-          type: { type: SchemaType.STRING },
-          tags: {
-            type: SchemaType.ARRAY,
-            items: { type: SchemaType.STRING }
-          }
-        },
-        required: ["front", "back", "type", "tags"]
-      }
-    }
-  },
-  required: ["cards"]
-};
-
-export async function generateFlashcards(req: ExtractionRequest, pdfBuffer?: Buffer): Promise<Partial<Flashcard>[]> {
-  const { topic, intent, content, curriculum } = req;
+export async function generateFlashcards(req: ExtractionRequest, imageUrls: string[] = []): Promise<Partial<Flashcard>[]> {
+  const { topic, intent, curriculum } = req;
   
   let curriculumInstruction = "";
   switch (curriculum) {
     case 'JEE Mains':
-      curriculumInstruction = "Focus on single-concept MCQ-style questions. Prioritize formulae, units, definitions, and numerical relationships. Cards should match the difficulty and style of JEE Mains questions — direct, unambiguous, formula-heavy.";
+      curriculumInstruction = "Focus on single-concept MCQ-style questions. Prioritize formulae, units, and definitions.";
       break;
     case 'JEE Advanced':
-      curriculumInstruction = "Focus on multi-concept, analytical questions. Include edge cases, derivations, and conceptual traps. Cards should challenge deeper understanding, not just recall. Match the style of JEE Advanced — complex, multi-step.";
+      curriculumInstruction = "Focus on multi-concept, analytical questions including derivations and conceptual traps.";
       break;
     case 'NEET':
-      curriculumInstruction = "Focus on factual recall, definitions, diagrams, and classifications. Prioritize biology terminology, chemical reactions in biological contexts, and physics applications in medicine. Match NCERT language exactly where possible.";
-      break;
-    case 'CBSE Class 12':
-      curriculumInstruction = "Focus on NCERT-aligned definitions, theorems, and standard questions. Prioritize board exam patterns — 1 mark, 2 mark, and 5 mark question styles. Keep language simple and textbook-accurate.";
+      curriculumInstruction = "Focus on factual recall, terminology, and classifications.";
       break;
     default:
-      curriculumInstruction = "Extract comprehensive, well-structured flashcards covering key concepts, definitions, and relationships in the material.";
+      curriculumInstruction = "Extract comprehensive flashcards covering key concepts and relationships.";
   }
 
   const basePrompt = intent === 'quick' 
-    ? `Create EXACTLY 10 essential flashcards for the topic "${topic}". Target Curriculum: ${curriculum}.
-       ${curriculumInstruction}
-       You MUST generate exactly 10 cards, not more, not less. Focus on the absolute core concepts and definitions. One concept per card.
-       Front: Question. Back: Direct, 2-line answer.`
-    : `Create 25-30 comprehensive flashcards for the topic "${topic}". Target Curriculum: ${curriculum}.
-       ${curriculumInstruction}
-       Cover edge cases, specific relationships, and step-by-step logic.
-       Include "How does X affect Y?" and "What happens if Z is removed?" type cards.
-       Provide 2-3 worked examples.`;
+    ? `Create EXACTLY 10 essential flashcards for "${topic}". ${curriculumInstruction} Target EXACTLY 10 cards.`
+    : `Create 25-30 comprehensive flashcards for "${topic}". ${curriculumInstruction}`;
 
-  const MODELS_TO_TRY = [
-    "gemini-1.5-flash",
-    "gemini-1.5-flash-latest",
-    "gemini-1.5-flash-001",
-    "gemini-1.5-flash-002",
-    "gemini-2.0-flash-exp",
-    "gemini-1.5-pro",
-    "gemini-1.5-pro-latest"
-  ];
+  try {
+    const userContent: any[] = [{ type: "text", text: SYSTEM_PROMPT + "\n\n" + basePrompt }];
 
-  let lastError: any = null;
-  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-  if (pdfBuffer) {
-    console.log(`AI_SERVICE: PDF size is ${(pdfBuffer.length / 1024).toFixed(2)} KB`);
-  }
-
-  for (const modelId of MODELS_TO_TRY) {
-    try {
-      console.log(`AI_SERVICE: Attempting extraction with ${modelId}...`);
-      const model = genAI.getGenerativeModel({
-        model: modelId,
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: FLASHCARD_SCHEMA as any,
-        },
+    // Add up to 10 images (pages) for analysis
+    for (const url of imageUrls.slice(0, 10)) {
+      userContent.push({
+        type: "image_url",
+        image_url: { url }
       });
-
-      const parts: any[] = [{ text: SYSTEM_PROMPT + "\n\n" + basePrompt }];
-
-      if (pdfBuffer) {
-        parts.push({
-          inlineData: {
-            data: pdfBuffer.toString("base64"),
-            mimeType: "application/pdf"
-          }
-        });
-      } else {
-        parts.push({ text: `Content to analyze: ${content}` });
-      }
-
-      const result = await model.generateContent({
-        contents: [{ role: "user", parts }]
-      });
-
-      const responseText = result.response.text();
-      const parsed = JSON.parse(responseText);
-      console.log(`AI_SERVICE: Success with ${modelId}!`);
-      return parsed.cards || [];
-    } catch (e: any) {
-      lastError = e;
-      const errorMsg = e.message?.toLowerCase() || "";
-      const isRetryable = errorMsg.includes("404") || 
-                          errorMsg.includes("not found") || 
-                          errorMsg.includes("503") || 
-                          errorMsg.includes("unavailable") || 
-                          errorMsg.includes("500") ||
-                          errorMsg.includes("429");
-      
-      if (isRetryable) {
-        console.warn(`AI_SERVICE: ${modelId} hit error (${e.message || "Unknown"}), waiting 2s then trying next...`);
-        await sleep(2000); // 2s delay
-        continue;
-      }
-      
-      console.error(`AI_SERVICE: Fatal error with ${modelId}:`, e.message);
-      throw e;
     }
-  }
 
-  throw new Error(`AI_SERVICE: All fallback models failed. Last error: ${lastError?.message || "No error message"}`);
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.2-11b-vision-preview",
+      messages: [
+        { role: "user", content: userContent }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.1,
+    });
+
+    const responseText = completion.choices[0]?.message?.content || "{}";
+    const parsed = JSON.parse(responseText);
+    return parsed.cards || [];
+  } catch (e: any) {
+    console.error("Groq Vision Error:", e);
+    throw new Error(e.message || "Failed to generate flashcards from Groq Vision");
+  }
 }

@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabaseClient';
 import IntentSelector from '@/components/home/IntentSelector';
 import CurriculumSelector from '@/components/home/CurriculumSelector';
 import LoadingOverlay from '@/components/ui/LoadingOverlay';
+import { convertPdfToImages } from '@/lib/pdf-to-image';
 
 export default function UploadPage() {
   const router = useRouter();
@@ -15,9 +16,9 @@ export default function UploadPage() {
   const [intent, setIntent] = useState<'quick' | 'deep'>('quick');
   const [curriculum, setCurriculum] = useState<string>('General');
   const [isCooking, setIsCooking] = useState(false);
+  const [cookingMessage, setCookingMessage] = useState("Preparing your material...");
   const [isInitializing, setIsInitializing] = useState(true);
 
-  // Transition Entry: Brief "Loading Workspace" pulse
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsInitializing(false);
@@ -30,28 +31,45 @@ export default function UploadPage() {
 
     setIsCooking(true);
     try {
-      // 1. Upload to Supabase Storage first (Bypasses Vercel 4.5MB limit)
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `source-materials/${fileName}`;
+      // 1. Convert PDF to optimized images in the browser
+      setCookingMessage("Converting PDF to visual data...");
+      const base64Images = await convertPdfToImages(file);
+      const totalPages = base64Images.length;
+      
+      const imageUrls: string[] = [];
 
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('source-materials')
-        .upload(filePath, file);
+      // 2. Upload images one-by-one to Supabase to bypass payload limits
+      for (let i = 0; i < base64Images.length; i++) {
+        setCookingMessage(`Uploading Page ${i + 1} of ${totalPages}...`);
+        
+        const fileName = `${Date.now()}-page-${i}.jpg`;
+        const filePath = `temp-images/${fileName}`;
 
-      if (uploadError) {
-        console.error("Storage upload error:", uploadError);
-        alert(`STORAGE_ERROR: ${uploadError.message}. Make sure the 'source-materials' bucket exists in Supabase.`);
-        setIsCooking(false);
-        return;
+        // Convert base64 to binary for upload
+        const res = await fetch(base64Images[i]);
+        const blob = await res.blob();
+
+        const { error: uploadError } = await supabase.storage
+          .from('source-materials')
+          .upload(filePath, blob);
+
+        if (uploadError) throw new Error(`PAGE_UPLOAD_ERROR: ${uploadError.message}`);
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('source-materials')
+          .getPublicUrl(filePath);
+        
+        imageUrls.push(publicUrl);
       }
 
-      // 2. Call extraction API with the storage path
+      // 3. Initiate AI Extraction
+      setCookingMessage("Analyzing material with Vision AI...");
       const response = await fetch('/api/extract', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          storagePath: filePath,
+          imageUrls,
           intent,
           curriculum,
           topic: file.name.replace('.pdf', '')
@@ -61,38 +79,36 @@ export default function UploadPage() {
       const result = await response.json();
 
       if (result.success) {
+        setCookingMessage("Extraction complete!");
         router.push('/library');
       } else {
-        const errorMsg = result.source ? `[${result.source}] ${result.error}` : result.error;
-        alert("Extraction failed: " + (errorMsg || "Unknown error"));
+        alert("Extraction failed: " + (result.error || "Unknown error"));
         setIsCooking(false);
       }
     } catch (error: any) {
       console.error("Extraction error:", error);
-      alert(`CRITICAL_FETCH_ERROR: ${error.message || "Unknown network error"}`);
+      alert(`CRITICAL_ERROR: ${error.message || "Unknown error"}`);
       setIsCooking(false);
     }
   };
 
   return (
     <div className="page-wrapper">
-      {/* Workspace Initialization Loader */}
       <LoadingOverlay 
         isVisible={isInitializing} 
         message="Loading workspace" 
         subtext="Preparing the Archivum environment..."
       />
 
-      {/* Main Extraction Logic Loader */}
       <LoadingOverlay 
         isVisible={isCooking} 
-        message="Abhyas is cooking your content"
-        subtext="Meticulously analyzing for conceptual essence..."
+        message={cookingMessage}
+        subtext="This may take a moment for larger documents."
       />
       
       <HeroSection 
         title="Extract the Essence"
-        subtitle="Transform static records into living wisdom. Upload to begin the extraction."
+        subtitle="Transform static records into living wisdom. New Vision pipeline enabled."
       />
       <UploadZone onFileSelect={setFile} />
       
