@@ -1,10 +1,13 @@
-import * as pdfjs from 'pdfjs-dist';
-
-// Standard CDN worker for version 4+
-const PDF_WORKER_URL = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
-pdfjs.GlobalWorkerOptions.workerSrc = PDF_WORKER_URL;
-
 export async function convertPdfToImages(file: File): Promise<string[]> {
+  if (typeof window === 'undefined') return [];
+  
+  // Dynamic import to prevent SSR/Build-time errors
+  const pdfjs = await import('pdfjs-dist');
+  
+  // Standard CDN worker for version 4+
+  const PDF_WORKER_URL = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
+  pdfjs.GlobalWorkerOptions.workerSrc = PDF_WORKER_URL;
+
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
   const imageUrls: string[] = [];
