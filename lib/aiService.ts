@@ -46,63 +46,58 @@ export async function generateFlashcards(req: ExtractionRequest, imageUrls: stri
     ? `Create EXACTLY 10 essential flashcards for "${topic}". ${curriculumInstruction} Target EXACTLY 10 cards.`
     : `Create 25-30 comprehensive flashcards for "${topic}". ${curriculumInstruction}`;
 
-  try {
-  const MODELS_TO_TRY = [
-    "llama-3.2-11b-vision-instant",
-    "llama-3.2-90b-vision-instant",
-    "meta-llama/Llama-3.2-11B-Vision-Instant",
-    "meta-llama/Llama-3.2-90B-Vision-Instant"
-  ];
-
   let lastError: any = null;
+  let availableModels: string[] = [];
 
-  for (const modelId of MODELS_TO_TRY) {
-    try {
-      console.log(`Groq Vision: Attempting extraction with ${modelId}...`);
-      
-      const userContent: any[] = [{ type: "text", text: SYSTEM_PROMPT + "\n\n" + basePrompt }];
+  try {
+    // 1. DYNAMIC DISCOVERY: Get the actual list of models from Groq
+    const modelList = await groq.models.list();
+    availableModels = modelList.data.map(m => m.id);
+    
+    // 2. Filter for Vision models or likely candidates
+    const visionModels = availableModels.filter(id => 
+      id.toLowerCase().includes("vision") || 
+      id.toLowerCase().includes("scout") ||
+      id.toLowerCase().includes("pixtral")
+    );
 
-      // Add up to 10 images (pages) for analysis
-      for (const url of imageUrls.slice(0, 10)) {
-        userContent.push({
-          type: "image_url",
-          image_url: { url }
+    // If no vision specific models found, try the ones we know or all
+    const MODELS_TO_TRY = visionModels.length > 0 
+      ? visionModels 
+      : ["llama-3.2-11b-vision-instant", "meta-llama/Llama-3.2-11B-Vision-Instant"];
+
+    console.log("Groq Discovery: Found available vision models:", MODELS_TO_TRY);
+
+    for (const modelId of MODELS_TO_TRY) {
+      try {
+        console.log(`Groq Vision: Attempting extraction with ${modelId}...`);
+        
+        const userContent: any[] = [{ type: "text", text: SYSTEM_PROMPT + "\n\n" + basePrompt }];
+        for (const url of imageUrls.slice(0, 10)) {
+          userContent.push({ type: "image_url", image_url: { url } });
+        }
+
+        const completion = await groq.chat.completions.create({
+          model: modelId,
+          messages: [{ role: "user", content: userContent }],
+          response_format: { type: "json_object" },
+          temperature: 0.1,
         });
-      }
 
-      const completion = await groq.chat.completions.create({
-        model: modelId,
-        messages: [
-          { role: "user", content: userContent }
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.1,
-      });
-
-      const responseText = completion.choices[0]?.message?.content || "{}";
-      const parsed = JSON.parse(responseText);
-      console.log(`Groq: Success with ${modelId}!`);
-      return parsed.cards || [];
-    } catch (e: any) {
-      lastError = e;
-      const errorMsg = e.message?.toLowerCase() || "";
-      const isRetryable = errorMsg.includes("not found") || 
-                          errorMsg.includes("does not exist") ||
-                          errorMsg.includes("403") ||
-                          errorMsg.includes("404") ||
-                          errorMsg.includes("503");
-      
-      if (isRetryable) {
-        console.warn(`Groq: ${modelId} failed (${e.message}), trying next...`);
+        const responseText = completion.choices[0]?.message?.content || "{}";
+        const parsed = JSON.parse(responseText);
+        console.log(`Groq: Success with ${modelId}!`);
+        return parsed.cards || [];
+      } catch (e: any) {
+        lastError = e;
+        console.warn(`Groq: ${modelId} failed: ${e.message}`);
         continue;
       }
-      
-      throw e;
     }
+  } catch (discoveryErr: any) {
+    console.error("Groq Discovery Error:", discoveryErr);
+    lastError = discoveryErr;
   }
 
-  throw new Error(`Groq: All vision models failed. Last error: ${lastError?.message || "Unknown error"}`);
-  } catch (err: any) {
-    throw err;
-  }
+  throw new Error(`Groq Discovery failed. Your key can see these models: [${availableModels.join(", ")}]. Last error: ${lastError?.message}`);
 }
