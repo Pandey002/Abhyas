@@ -4,8 +4,8 @@ export async function convertPdfToImages(file: File): Promise<string[]> {
   // Dynamic import to prevent SSR/Build-time errors
   const pdfjs = await import('pdfjs-dist');
   
-  // Standard CDN worker for version 4+
-  const PDF_WORKER_URL = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
+  // Switch to jsDelivr which is more reliable for ESM workers
+  const PDF_WORKER_URL = `https://cdn.jsdelivr.net/npm/pdfjs-dist@5.6.205/build/pdf.worker.min.mjs`;
   pdfjs.GlobalWorkerOptions.workerSrc = PDF_WORKER_URL;
 
   const arrayBuffer = await file.arrayBuffer();
