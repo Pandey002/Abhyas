@@ -47,30 +47,58 @@ export async function generateFlashcards(req: ExtractionRequest, imageUrls: stri
     : `Create 25-30 comprehensive flashcards for "${topic}". ${curriculumInstruction}`;
 
   try {
-    const userContent: any[] = [{ type: "text", text: SYSTEM_PROMPT + "\n\n" + basePrompt }];
+  const MODELS_TO_TRY = [
+    "llama-3.2-11b-vision-instant",
+    "llama-3.2-90b-vision-instant",
+    "llama-3.3-70b-versatile", // Fallback for text-processing if vision fails
+    "meta-llama/llama-4-scout-17b-16e-instruct"
+  ];
 
-    // Add up to 10 images (pages) for analysis
-    for (const url of imageUrls.slice(0, 10)) {
-      userContent.push({
-        type: "image_url",
-        image_url: { url }
+  let lastError: any = null;
+
+  for (const modelId of MODELS_TO_TRY) {
+    try {
+      console.log(`Groq: Attempting extraction with ${modelId}...`);
+      const userContent: any[] = [{ type: "text", text: SYSTEM_PROMPT + "\n\n" + basePrompt }];
+
+      // Add up to 10 images (pages) for analysis
+      for (const url of imageUrls.slice(0, 10)) {
+        userContent.push({
+          type: "image_url",
+          image_url: { url }
+        });
+      }
+
+      const completion = await groq.chat.completions.create({
+        model: modelId,
+        messages: [
+          { role: "user", content: userContent }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.1,
       });
+
+      const responseText = completion.choices[0]?.message?.content || "{}";
+      const parsed = JSON.parse(responseText);
+      console.log(`Groq: Success with ${modelId}!`);
+      return parsed.cards || [];
+    } catch (e: any) {
+      lastError = e;
+      const errorMsg = e.message?.toLowerCase() || "";
+      const isRetryable = errorMsg.includes("not found") || 
+                          errorMsg.includes("does not exist") ||
+                          errorMsg.includes("403") ||
+                          errorMsg.includes("404") ||
+                          errorMsg.includes("503");
+      
+      if (isRetryable) {
+        console.warn(`Groq: ${modelId} failed (${e.message}), trying next...`);
+        continue;
+      }
+      
+      throw e;
     }
-
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.2-11b-vision-instant",
-      messages: [
-        { role: "user", content: userContent }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.1,
-    });
-
-    const responseText = completion.choices[0]?.message?.content || "{}";
-    const parsed = JSON.parse(responseText);
-    return parsed.cards || [];
-  } catch (e: any) {
-    console.error("Groq Vision Error:", e);
-    throw new Error(e.message || "Failed to generate flashcards from Groq Vision");
   }
+
+  throw new Error(`Groq: All vision models failed. Last error: ${lastError?.message || "Unknown error"}`);
 }
