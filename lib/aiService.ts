@@ -58,7 +58,7 @@ export async function generateFlashcards(req: ExtractionRequest, imageUrls: stri
     }
 
     const completion = await groq.chat.completions.create({
-      model: "llama-3.2-11b-vision-preview",
+      model: "llama-3.2-11b-vision-instant",
       messages: [
         { role: "user", content: userContent }
       ],
