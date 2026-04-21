@@ -12,21 +12,29 @@ export async function processPDF(
 ): Promise<Flashcard[]> {
   try {
     // 1. Extract raw text
-    const data = await pdf(fileBuffer);
+    console.log('INGESTION: Extracting PDF text...');
+    const data = await pdf(fileBuffer).catch(e => {
+      throw new Error(`PDF_PARSE_ERROR: ${e.message}`);
+    });
     const rawText = data.text;
 
     // 2. Clean text
+    console.log('INGESTION: Cleaning text...');
     const cleanedText = cleanExtractedText(rawText);
 
     // 3. Generate cards via AI
+    console.log('INGESTION: Generating cards with Gemini...');
     const rawCards = await generateFlashcards({
       topic,
       intent,
       content: cleanedText,
       curriculum
+    }).catch(e => {
+      throw new Error(`AI_SERVICE_ERROR: ${e.message}`);
     });
 
     // 4. Enrich cards with SM-2 defaults and IDs
+    console.log('INGESTION: Enriching', rawCards.length, 'cards...');
     const enrichCards: Flashcard[] = rawCards.map(card => ({
       id: uuidv4(),
       front: card.front || "Empty Question",

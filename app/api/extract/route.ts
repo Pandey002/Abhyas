@@ -76,8 +76,15 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error('Extraction Error:', error);
+    // Determine the source of the error for better debugging
+    let errorSource = 'INTERNAL_ERROR';
+    if (error.message?.includes('PDF')) errorSource = 'PDF_PROCESSING_ERROR';
+    if (error.message?.includes('Gemini') || error.message?.includes('AI')) errorSource = 'AI_SERVICE_ERROR';
+    if (error.code) errorSource = `SUPABASE_ERROR_${error.code}`;
+
     return NextResponse.json({ 
-      error: error.message || 'Internal Server Error' 
+      error: error.message || 'Internal Server Error',
+      source: errorSource
     }, { status: 500 });
   }
 }

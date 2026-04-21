@@ -45,7 +45,8 @@ export default function UploadPage() {
       if (result.success) {
         router.push('/library');
       } else {
-        alert("Extraction failed: " + (result.error || "Unknown error"));
+        const errorMsg = result.source ? `[${result.source}] ${result.error}` : result.error;
+        alert("Extraction failed: " + (errorMsg || "Unknown error"));
         setIsCooking(false);
       }
     } catch (error) {
