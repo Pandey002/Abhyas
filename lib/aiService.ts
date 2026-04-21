@@ -73,7 +73,8 @@ export async function generateFlashcards(req: ExtractionRequest, imageUrls: stri
         console.log(`Groq Vision: Attempting extraction with ${modelId}...`);
         
         const userContent: any[] = [{ type: "text", text: SYSTEM_PROMPT + "\n\n" + basePrompt }];
-        for (const url of imageUrls.slice(0, 10)) {
+        // Llama 4 Scout and others have a 5-image limit per request
+        for (const url of imageUrls.slice(0, 5)) {
           userContent.push({ type: "image_url", image_url: { url } });
         }
 
