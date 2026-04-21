@@ -31,7 +31,13 @@ export default function ProfilePage() {
 
       const { data: cardData } = await supabase
         .from('flashcards')
-        .select('repetitions');
+        .select('status');
+
+      const { data: settingsData } = await supabase
+        .from('global_settings')
+        .select('current_streak')
+        .eq('id', 'default')
+        .single();
 
       if (cardData) {
         let mastered = 0;
@@ -39,8 +45,8 @@ export default function ProfilePage() {
         let notStarted = 0;
 
         cardData.forEach(card => {
-          if (card.repetitions > 4) mastered++;
-          else if (card.repetitions > 0) shaky++;
+          if (card.status === 'mastered') mastered++;
+          else if (card.status === 'shaky') shaky++;
           else notStarted++;
         });
 
@@ -50,7 +56,7 @@ export default function ProfilePage() {
           mastered,
           shaky,
           notStarted,
-          streak: 2
+          streak: settingsData?.current_streak || 1
         });
       }
     } catch (error) {

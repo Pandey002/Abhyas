@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="#1a1a2e" stroke="#ffffff" stroke-width="4.5" stroke-linejoin="round">
+  <!-- Deep Navy / Black background -->
+  <rect x="0" y="0" width="100" height="100" fill="#1a1a2e" stroke="none" rx="20" />
+  
+  <!-- Back Card (Rotated Left) -->
+  <rect x="35" y="30" width="30" height="45" rx="3.5" transform="rotate(-12 50 85)" fill="#1a1a2e" stroke="#ffffff" />
+  
+  <!-- Front Card (Rotated Right) -->
+  <rect x="35" y="30" width="30" height="45" rx="3.5" transform="rotate(12 50 85)" fill="#1a1a2e" stroke="#ffffff" />
+</svg>

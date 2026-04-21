@@ -11,6 +11,7 @@ interface DeckData {
   masteryPercentage: number;
   studyProgress?: number;
   isDue?: boolean;
+  curriculum?: string;
 }
 
 interface DeckLibraryProps {
@@ -43,6 +44,12 @@ const DeckLibrary: React.FC<DeckLibraryProps> = ({
       <div className={`deck-grid ${variant}`}>
         {decks.map(deck => (
           <Link href={`/study/${deck.id}`} key={deck.id} className={`deck-card card card-hover ${variant} ${deck.isDue ? 'is-due' : ''}`}>
+            {deck.curriculum && (
+              <div className={`curriculum-badge ${deck.curriculum.toLowerCase().replace(/\s+/g, '-')}`}>
+                {deck.curriculum}
+              </div>
+            )}
+            
             {deck.studyProgress === 100 && (
               <div className="due-badge" style={{ background: '#2ecc71', color: 'white', border: 'none' }}>
                 Review Complete
@@ -54,7 +61,7 @@ const DeckLibrary: React.FC<DeckLibraryProps> = ({
               </div>
             )}
             
-            <div className="card-top">
+            <div className="card-top" style={{ marginTop: deck.curriculum ? '24px' : '0' }}>
               <div className="deck-subject label-caps font-bold tracking-widest text-xs uppercase mb-2 text-coral">{deck.subject}</div>
               <h3 className="deck-title mb-1">{deck.title}</h3>
               <p className="text-sm mb-4" style={{ color: 'var(--color-grey-mid)', marginTop: '8px' }}>{deck.cardCount} Fragments</p>

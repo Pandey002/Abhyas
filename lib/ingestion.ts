@@ -7,7 +7,8 @@ import { v4 as uuidv4 } from 'uuid';
 export async function processPDF(
   fileBuffer: Buffer, 
   topic: string, 
-  intent: 'quick' | 'deep'
+  intent: 'quick' | 'deep',
+  curriculum: string
 ): Promise<Flashcard[]> {
   try {
     // 1. Extract raw text
@@ -21,7 +22,8 @@ export async function processPDF(
     const rawCards = await generateFlashcards({
       topic,
       intent,
-      content: cleanedText
+      content: cleanedText,
+      curriculum
     });
 
     // 4. Enrich cards with SM-2 defaults and IDs

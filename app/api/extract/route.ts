@@ -8,17 +8,18 @@ export async function POST(req: NextRequest) {
     const file = formData.get('file') as File;
     const topic = formData.get('topic') as string || 'Untitled Archive';
     const intent = (formData.get('intent') as 'quick' | 'deep') || 'quick';
+    const curriculum = formData.get('curriculum') as string || 'General';
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    console.log('API: Received file:', file.name, 'topic:', topic, 'intent:', intent);
+    console.log('API: Received file:', file.name, 'topic:', topic, 'intent:', intent, 'curriculum:', curriculum);
     const buffer = Buffer.from(await file.arrayBuffer());
 
     // 1. Process PDF and generate cards
     console.log('API: Starting PDF processing...');
-    const cards = await processPDF(buffer, topic, intent);
+    const cards = await processPDF(buffer, topic, intent, curriculum);
     console.log('API: Processing complete. Generated', cards.length, 'cards.');
 
     // 2. Create Deck in Supabase
@@ -28,7 +29,8 @@ export async function POST(req: NextRequest) {
       .insert({
         title: topic,
         subject: 'General', 
-        card_count: cards.length
+        card_count: cards.length,
+        curriculum: curriculum
       })
       .select()
       .single();

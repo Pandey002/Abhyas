@@ -32,6 +32,7 @@ export interface Deck {
   subject: string;
   description?: string;
   cardCount: number;
+  curriculum?: string;
   lastStudiedAt?: string | null;
   reviewedToday?: number;
   createdAt: string;
@@ -40,5 +41,6 @@ export interface Deck {
 export interface ExtractionRequest {
   topic: string;
   intent: 'quick' | 'deep';
+  curriculum: string;
   content: string;
 }

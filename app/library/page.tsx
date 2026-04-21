@@ -157,10 +157,16 @@ export default function LibraryPage() {
     }
   };
 
+  const [selectedFilter, setSelectedFilter] = useState('All');
+
   const dueDecks = decks.filter(d => d.isDue);
-  const allDecks = decks;
+  const filteredDecks = selectedFilter === 'All' 
+    ? decks 
+    : decks.filter(d => d.curriculum === selectedFilter);
 
   if (isLoading) return <div className="page-wrapper color-grey-mid">Accessing the Archivum...</div>;
+
+  const filters = ['All', 'General', 'JEE Mains', 'JEE Advanced', 'NEET', 'CBSE Class 12'];
 
   return (
     <div className="page-wrapper">
@@ -200,8 +206,21 @@ export default function LibraryPage() {
             />
           </div>
 
-          {/* Action Zone: Only show if there are decks due */}
-          {dueDecks.length > 0 && (
+          {/* Filter Row */}
+          <div className="filter-row mb-8 flex gap-4 overflow-x-auto pb-2">
+            {filters.map(filter => (
+              <button
+                key={filter}
+                className={`filter-pill ${selectedFilter === filter ? 'active' : ''}`}
+                onClick={() => setSelectedFilter(filter)}
+              >
+                {filter}
+              </button>
+            ))}
+          </div>
+
+          {/* Action Zone: Only show if there are decks due and filter is All/Matches */}
+          {dueDecks.length > 0 && selectedFilter === 'All' && (
             <div className="mb-16">
               <DeckLibrary 
                 sectionTitle="Due for Mastery"
@@ -211,7 +230,8 @@ export default function LibraryPage() {
                   subject: d.subject,
                   cardCount: d.card_count,
                   masteryPercentage: d.calculatedMastery,
-                  isDue: true
+                  isDue: true,
+                  curriculum: d.curriculum
                 }))} 
                 variant="compact"
                 showTitle={true}
@@ -221,15 +241,16 @@ export default function LibraryPage() {
 
           {/* Collection Zone */}
           <DeckLibrary 
-            sectionTitle="Knowledge Collection"
-            decks={allDecks.map(d => ({
+            sectionTitle={selectedFilter === 'All' ? "Knowledge Collection" : `${selectedFilter} Collection`}
+            decks={filteredDecks.map(d => ({
               id: d.id,
               title: d.title,
               subject: d.subject,
               cardCount: d.card_count,
               masteryPercentage: d.calculatedMastery,
               studyProgress: d.studyProgress,
-              isDue: d.isDue
+              isDue: d.isDue,
+              curriculum: d.curriculum
             }))} 
             variant="grid"
             showTitle={true} 
