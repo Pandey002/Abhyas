@@ -83,12 +83,19 @@ export async function generateFlashcards(req: ExtractionRequest, pdfBuffer?: Buf
   const MODELS_TO_TRY = [
     "gemini-1.5-flash",
     "gemini-1.5-flash-latest",
+    "gemini-1.5-flash-001",
+    "gemini-1.5-flash-002",
     "gemini-2.0-flash-exp",
     "gemini-1.5-pro",
-    "gemini-2.5-flash"
+    "gemini-1.5-pro-latest"
   ];
 
   let lastError: any = null;
+  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  if (pdfBuffer) {
+    console.log(`AI_SERVICE: PDF size is ${(pdfBuffer.length / 1024).toFixed(2)} KB`);
+  }
 
   for (const modelId of MODELS_TO_TRY) {
     try {
@@ -129,10 +136,12 @@ export async function generateFlashcards(req: ExtractionRequest, pdfBuffer?: Buf
                           errorMsg.includes("not found") || 
                           errorMsg.includes("503") || 
                           errorMsg.includes("unavailable") || 
-                          errorMsg.includes("500");
+                          errorMsg.includes("500") ||
+                          errorMsg.includes("429");
       
       if (isRetryable) {
-        console.warn(`AI_SERVICE: ${modelId} failed with retryable error, moving to next fallback...`);
+        console.warn(`AI_SERVICE: ${modelId} hit error (${e.message || "Unknown"}), waiting 2s then trying next...`);
+        await sleep(2000); // 2s delay
         continue;
       }
       
@@ -141,5 +150,5 @@ export async function generateFlashcards(req: ExtractionRequest, pdfBuffer?: Buf
     }
   }
 
-  throw new Error(`AI_SERVICE: All fallback models failed. Last error: ${lastError?.message}`);
+  throw new Error(`AI_SERVICE: All fallback models failed. Last error: ${lastError?.message || "No error message"}`);
 }
