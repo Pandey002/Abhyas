@@ -11,17 +11,7 @@ Your goal is to transform the provided images of study material into high-qualit
 - Use Step-by-step logic for worked examples.
 - Call out common pitfalls.
 
-Return ONLY a valid JSON object containing a "cards" array of flashcard objects.
-{
-  "cards": [
-    {
-      "front": "Question",
-      "back": "Answer",
-      "type": "concept | formula | date | process | definition | relationship | edge-case",
-      "tags": ["tag1", "tag2"]
-    }
-  ]
-}
+Return ONLY a valid JSON object containing a "cards" array.
 `;
 
 export async function generateFlashcards(req: ExtractionRequest, imageUrls: string[] = []): Promise<Partial<Flashcard>[]> {
@@ -43,8 +33,11 @@ export async function generateFlashcards(req: ExtractionRequest, imageUrls: stri
   }
 
   const basePrompt = intent === 'quick' 
-    ? `Create EXACTLY 10 essential flashcards for "${topic}". ${curriculumInstruction} Target EXACTLY 10 cards.`
-    : `Create 25-30 comprehensive flashcards for "${topic}". ${curriculumInstruction}`;
+    ? `Create EXACTLY 10 essential, high-impact flashcards for "${topic}". ${curriculumInstruction} Target EXACTLY 10 cards.`
+    : `Create an ULTRA-DENSE deck for "${topic}". ${curriculumInstruction} 
+       COMMAND: You must extract AT LEAST 6-8 unique, granular flashcards FROM EVERY SINGLE IMAGE provided. 
+       Do not summarize; instead, atomize every definition, derivation, example, and diagram on each page into its own card. 
+       Aim for a final total of 30-40 cards.`;
 
   let lastError: any = null;
   let availableModels: string[] = [];
@@ -61,19 +54,17 @@ export async function generateFlashcards(req: ExtractionRequest, imageUrls: stri
       id.toLowerCase().includes("pixtral")
     );
 
-    // If no vision specific models found, try the ones we know or all
+    // If no vision specific models found, try the ones we know
     const MODELS_TO_TRY = visionModels.length > 0 
       ? visionModels 
       : ["llama-3.2-11b-vision-instant", "meta-llama/Llama-3.2-11B-Vision-Instant"];
 
-    console.log("Groq Discovery: Found available vision models:", MODELS_TO_TRY);
-
     for (const modelId of MODELS_TO_TRY) {
       try {
-        console.log(`Groq Vision: Attempting extraction with ${modelId}...`);
+        console.log(`Groq Vision: Processing with ${modelId}...`);
         
         const userContent: any[] = [{ type: "text", text: SYSTEM_PROMPT + "\n\n" + basePrompt }];
-        // Llama 4 Scout and others have a 5-image limit per request
+        // Llama 4 Scout and others have a 5-image limit
         for (const url of imageUrls.slice(0, 5)) {
           userContent.push({ type: "image_url", image_url: { url } });
         }
@@ -82,12 +73,11 @@ export async function generateFlashcards(req: ExtractionRequest, imageUrls: stri
           model: modelId,
           messages: [{ role: "user", content: userContent }],
           response_format: { type: "json_object" },
-          temperature: 0.1,
+          temperature: 0.5,
         });
 
         const responseText = completion.choices[0]?.message?.content || "{}";
         const parsed = JSON.parse(responseText);
-        console.log(`Groq: Success with ${modelId}!`);
         return parsed.cards || [];
       } catch (e: any) {
         lastError = e;
