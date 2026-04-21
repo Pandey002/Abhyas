@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
@@ -14,7 +14,7 @@ interface FlashcardProps {
   onFlip: () => void;
 }
 
-const Flashcard: React.FC<FlashcardProps> = ({ front, back, type, isFlipped, onFlip }) => {
+const Flashcard: React.FC<FlashcardProps> = memo(({ front, back, type, isFlipped, onFlip }) => {
   return (
     <div 
       className={`flashcard-container ${isFlipped ? 'flipped' : ''}`} 
@@ -53,6 +53,6 @@ const Flashcard: React.FC<FlashcardProps> = ({ front, back, type, isFlipped, onF
       </div>
     </div>
   );
-};
+});
 
 export default Flashcard;

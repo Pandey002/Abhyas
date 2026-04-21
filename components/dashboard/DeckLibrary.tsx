@@ -9,6 +9,7 @@ interface DeckData {
   subject: string;
   cardCount: number;
   masteryPercentage: number;
+  studyProgress?: number;
   isDue?: boolean;
 }
 
@@ -42,27 +43,37 @@ const DeckLibrary: React.FC<DeckLibraryProps> = ({
       <div className={`deck-grid ${variant}`}>
         {decks.map(deck => (
           <Link href={`/study/${deck.id}`} key={deck.id} className={`deck-card card card-hover ${variant} ${deck.isDue ? 'is-due' : ''}`}>
-            {deck.isDue && (
+            {deck.studyProgress === 100 && (
+              <div className="due-badge" style={{ background: '#2ecc71', color: 'white', border: 'none' }}>
+                Review Complete
+              </div>
+            )}
+            {deck.isDue && deck.studyProgress !== 100 && (
               <div className="due-badge">
                 <Zap size={10} fill="currentColor" /> Due Now
               </div>
             )}
             
             <div className="card-top">
-              <span className="label-caps deck-subject">{deck.subject}</span>
-              <h3 className="deck-title">{deck.title}</h3>
+              <div className="deck-subject label-caps font-bold tracking-widest text-xs uppercase mb-2 text-coral">{deck.subject}</div>
+              <h3 className="deck-title mb-1">{deck.title}</h3>
+              <p className="text-sm mb-4" style={{ color: 'var(--color-grey-mid)', marginTop: '8px' }}>{deck.cardCount} Fragments</p>
             </div>
             
-            <div className="deck-progress-container">
+            <div className="deck-progress-container" title={`Study Progress: ${deck.studyProgress}%`}>
               <div 
-                className="deck-progress-bar" 
-                style={{ width: `${deck.masteryPercentage}%` }}
+                className="deck-progress-bar study" 
+                style={{ width: `${deck.studyProgress || 0}%`, zIndex: 1, position: 'absolute', height: '100%' }}
+              ></div>
+              <div 
+                className="deck-progress-bar mastery" 
+                style={{ width: `${deck.masteryPercentage}%`, zIndex: 2, position: 'absolute', height: '100%' }}
               ></div>
             </div>
 
-            <div className="deck-meta">
-              <span>{deck.cardCount} Fragments</span>
-              <span className="mastery-text">{deck.masteryPercentage}% Mastered</span>
+            <div className="deck-meta w-full flex justify-between mt-4">
+              <span className="reviewed-text" style={{ color: 'var(--color-grey-mid)' }}>{deck.studyProgress}% Reviewed</span>
+              <span className="mastery-text font-bold" style={{ color: 'var(--color-navy)' }}>{deck.masteryPercentage}% Mastered</span>
             </div>
 
             <div className="deck-footer">

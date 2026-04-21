@@ -1,0 +1,75 @@
+.academic-bg-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  background-color: var(--color-parchment);
+  overflow: hidden;
+}
+
+.noise-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  filter: url(#noise);
+  opacity: 0.03;
+  z-index: 1;
+}
+
+.academic-symbol {
+  position: absolute;
+  color: var(--color-navy); /* Deep Navy */
+  opacity: 0.12; /* Increased significantly for visibility */
+  font-family: var(--font-serif), serif;
+  user-select: none;
+  z-index: 0;
+}
+
+/* Corner Ornaments */
+.corner-ornament {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-color: var(--color-coral);
+  opacity: 0.2;
+  z-index: 2;
+}
+
+.top-left {
+  top: 40px;
+  left: 40px;
+  border-top: 1px solid var(--color-coral);
+  border-left: 1px solid var(--color-coral);
+}
+
+.top-right {
+  top: 40px;
+  right: 40px;
+  border-top: 1px solid var(--color-coral);
+  border-right: 1px solid var(--color-coral);
+}
+
+.bottom-left {
+  bottom: 40px;
+  left: 40px;
+  border-bottom: 1px solid var(--color-coral);
+  border-left: 1px solid var(--color-coral);
+}
+
+.bottom-right {
+  bottom: 40px;
+  right: 40px;
+  border-bottom: 1px solid var(--color-coral);
+  border-right: 1px solid var(--color-coral);
+}
+
+.noise-svg {
+  position: absolute;
+  width: 0;
+  height: 0;
+}

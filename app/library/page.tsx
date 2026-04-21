@@ -45,12 +45,19 @@ export default function LibraryPage() {
         .select('*')
         .order('created_at', { ascending: false });
 
+      // 1b. Fetch Streak Settings
+      const { data: settingsData, error: settingsError } = await supabase
+        .from('global_settings')
+        .select('*')
+        .eq('id', 'default')
+        .single();
+
       if (deckError) throw deckError;
 
       // 2. Fetch All Flashcards to calculate per-deck due status and overall mastery
       const { data: cardData, error: cardError } = await supabase
         .from('flashcards')
-        .select('deck_id, repetitions, next_review_date');
+        .select('deck_id, repetitions, next_review_date, last_review_date, status, total_reviews');
 
       if (cardError) throw cardError;
 
@@ -59,7 +66,7 @@ export default function LibraryPage() {
         
         // Track due status AND mastery per deck
         const dueDecksMap: Record<string, boolean> = {};
-        const deckMasteryMap: Record<string, {mastered: number, total: number}> = {};
+        const deckStatsMap: Record<string, {mastered: number, reviewed: number, total: number}> = {};
         
         let totalMastered = 0;
         let totalShaky = 0;
@@ -68,18 +75,24 @@ export default function LibraryPage() {
 
         cardData.forEach(card => {
           // Initialize deck entry if missing
-          if (!deckMasteryMap[card.deck_id]) {
-            deckMasteryMap[card.deck_id] = { mastered: 0, total: 0 };
+          if (!deckStatsMap[card.deck_id]) {
+            deckStatsMap[card.deck_id] = { mastered: 0, reviewed: 0, total: 0 };
           }
-          deckMasteryMap[card.deck_id].total++;
+          deckStatsMap[card.deck_id].total++;
 
-          if (card.repetitions > 4) {
+          // Global and local stats based on strict string status
+          if (card.status === 'mastered') {
             totalMastered++;
-            deckMasteryMap[card.deck_id].mastered++;
-          } else if (card.repetitions > 0) {
+            deckStatsMap[card.deck_id].mastered++;
+          } else if (card.status === 'shaky') {
             totalShaky++;
           } else {
             totalNotStarted++;
+          }
+
+          // Percent Reviewed check based on total_reviews > 0
+          if (card.total_reviews && card.total_reviews > 0) {
+            deckStatsMap[card.deck_id].reviewed++;
           }
 
           if (card.next_review_date <= today) {
@@ -90,12 +103,15 @@ export default function LibraryPage() {
 
         // Map enriched data to deck objects
         const enrichedDecks = deckData.map(d => {
-          const deckStats = deckMasteryMap[d.id] || { mastered: 0, total: 0 };
+          const deckStats = deckStatsMap[d.id] || { mastered: 0, reviewed: 0, total: 0 };
           return {
             ...d,
             isDue: dueDecksMap[d.id] || false,
             calculatedMastery: deckStats.total > 0 
               ? Math.round((deckStats.mastered / deckStats.total) * 100) 
+              : 0,
+            studyProgress: deckStats.total > 0
+              ? Math.round((deckStats.reviewed / deckStats.total) * 100)
               : 0
           };
         });
@@ -104,6 +120,7 @@ export default function LibraryPage() {
         setStats(prev => ({
           ...prev,
           dueToday: totalDue,
+          streak: settingsData?.current_streak || 1,
           masteryBreakdown: {
             mastered: totalMastered,
             shaky: totalShaky,
@@ -211,6 +228,7 @@ export default function LibraryPage() {
               subject: d.subject,
               cardCount: d.card_count,
               masteryPercentage: d.calculatedMastery,
+              studyProgress: d.studyProgress,
               isDue: d.isDue
             }))} 
             variant="grid"

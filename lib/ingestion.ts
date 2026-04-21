@@ -32,8 +32,10 @@ export async function processPDF(
       type: (card.type as any) || "concept",
       tags: card.tags || [],
       easeFactor: 2.5,
-      intervalDays: 0,
+      intervalDays: 1,
       repetitions: 0,
+      status: "not_started",
+      totalReviews: 0,
       nextReviewDate: new Date().toISOString().slice(0, 10),
       lastReviewDate: null,
       deckId: "", // To be assigned by caller

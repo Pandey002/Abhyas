@@ -5,7 +5,9 @@ import Link from 'next/link';
 import confetti from 'canvas-confetti';
 import { Flashcard as FlashcardType, Rating } from '@/types';
 import Flashcard from './Flashcard';
+import AcademicBackground from './AcademicBackground';
 import { calculateNextReview } from '@/lib/sm2';
+import { supabase } from '@/lib/supabaseClient';
 import { ArrowLeft, RotateCcw, Flame } from 'lucide-react';
 import './ReviewSession.css';
 
@@ -22,6 +24,8 @@ const ReviewSession: React.FC<ReviewSessionProps> = ({ deckTitle, cards, onCompl
   const [isFinished, setIsFinished] = useState(false);
   const [animationClass, setAnimationClass] = useState('');
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [streak, setStreak] = useState(1);
+  const [streakUpdated, setStreakUpdated] = useState(false);
 
   // Stats for the completion screen
   const [masteredCount, setMasteredCount] = useState(0);
@@ -31,6 +35,11 @@ const ReviewSession: React.FC<ReviewSessionProps> = ({ deckTitle, cards, onCompl
   const progress = ((currentIndex) / sessionCards.length) * 100;
 
   useEffect(() => {
+    // Component Mount: Fetch current streak
+    supabase.from('global_settings').select('*').eq('id', 'default').single().then(({data}) => {
+      if (data) setStreak(data.current_streak);
+    });
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isTransitioning) return;
 
@@ -53,33 +62,84 @@ const ReviewSession: React.FC<ReviewSessionProps> = ({ deckTitle, cards, onCompl
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentIndex, isFlipped, isTransitioning]);
 
-  const handleRate = (rating: Rating) => {
+  const handleRate = async (rating: Rating) => {
     if (isTransitioning) return;
     
-    // 1. Calculate next review
+    // 1. Streak Update Logic (Only fires once per session if a day rolled over)
+    if (!streakUpdated) {
+      setStreakUpdated(true);
+      const todayString = new Date().toISOString().slice(0, 10);
+      try {
+        const { data: settings } = await supabase.from('global_settings').select('*').eq('id', 'default').single();
+        if (settings && settings.last_active_date !== todayString) {
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayString = yesterday.toISOString().slice(0, 10);
+          
+          const newStreak = settings.last_active_date === yesterdayString ? settings.current_streak + 1 : 1;
+          
+          await supabase.from('global_settings').update({
+            current_streak: newStreak,
+            last_active_date: todayString
+          }).eq('id', 'default');
+          
+          setStreak(newStreak);
+        }
+      } catch(e) {}
+    }
+
+    // 2. Calculate next review
     const updatedCard = calculateNextReview(currentCard, rating);
     
-    // 2. Update stats
-    if (rating >= 4) setMasteredCount(prev => prev + 1);
+    // 2. Debug Log per Specification
+    console.log(`
+      Card ID: ${updatedCard.id}
+      New Status: ${updatedCard.status}
+      New Repetitions: ${updatedCard.repetitions}
+      New Total Reviews: ${updatedCard.totalReviews}
+    `);
 
-    // 3. Update local state
+    // 3. Save to Supabase immediately (Persistence)
+    supabase.from('flashcards').update({
+      ease_factor: updatedCard.easeFactor,
+      interval_days: updatedCard.intervalDays,
+      repetitions: updatedCard.repetitions,
+      status: updatedCard.status,
+      total_reviews: updatedCard.totalReviews,
+      last_review_date: updatedCard.lastReviewDate,
+      next_review_date: updatedCard.nextReviewDate
+    }).eq('id', updatedCard.id).then(({error}) => {
+       if (error) console.error("Error saving card progress:", error);
+    });
+
+    // 4. Update stats
+    if (updatedCard.status === 'mastered') setMasteredCount(prev => prev + 1);
+
+    // 5. Update local state
     const newCards = [...sessionCards];
     newCards[currentIndex] = updatedCard;
     setSessionCards(newCards);
 
-    // 4. Animation: Fly Up
+    // 6. Animation: Fly Up
     setAnimationClass('fly-up');
     setIsTransitioning(true);
 
-    // 5. Confetti for "Easy"
-    if (rating === 5) {
+    // 5. Confetti for all ratings
+    const confettiColors = {
+      1: ['#ef4444', '#fee2e2'], // Forgot: Red
+      2: ['#f59e0b', '#fef3c7'], // Hard: Orange
+      4: ['#3b82f6', '#dbeafe'], // Good: Blue
+      5: ['#10b981', '#ffffff']  // Easy: Emerald
+    };
+
+    requestAnimationFrame(() => {
       confetti({
-        particleCount: 80,
-        spread: 60,
+        particleCount: rating === 5 ? 100 : 40,
+        spread: rating === 5 ? 70 : 50,
         origin: { y: 0.7 },
-        colors: ['#10B981', '#ffffff']
+        colors: confettiColors[rating as keyof typeof confettiColors] || ['#888888']
       });
-    }
+    });
 
     // 6. Transition to next card
     setTimeout(() => {
@@ -89,6 +149,11 @@ const ReviewSession: React.FC<ReviewSessionProps> = ({ deckTitle, cards, onCompl
         setAnimationClass('slide-in-right');
         setIsTransitioning(false);
       } else {
+        // Session Complete updates
+        supabase.from('decks').update({
+          last_studied_at: new Date().toISOString()
+        }).eq('id', currentCard.deckId).then();
+
         setIsFinished(true);
         triggerFinalConfetti();
         onComplete(newCards);
@@ -138,7 +203,7 @@ const ReviewSession: React.FC<ReviewSessionProps> = ({ deckTitle, cards, onCompl
               <span className="comp-stat-label">Mastered</span>
             </div>
             <div className="comp-stat-card">
-              <span className="comp-stat-value">5</span>
+              <span className="comp-stat-value">{streak}</span>
               <span className="comp-stat-label">Day Streak</span>
             </div>
           </div>
@@ -158,6 +223,7 @@ const ReviewSession: React.FC<ReviewSessionProps> = ({ deckTitle, cards, onCompl
 
   return (
     <div className="review-session">
+      <AcademicBackground />
       {/* Top Bar */}
       <header className="study-header">
         <div className="header-left">
@@ -172,7 +238,7 @@ const ReviewSession: React.FC<ReviewSessionProps> = ({ deckTitle, cards, onCompl
             <span>{currentIndex + 1} / {sessionCards.length}</span>
             <div className="streak-pill">
               <Flame size={22} fill="currentColor" />
-              <span>5</span>
+              <span>{streak}</span>
             </div>
           </div>
         </div>

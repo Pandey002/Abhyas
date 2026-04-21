@@ -3,7 +3,7 @@
   flex-direction: column;
   height: 100vh;
   width: 100vw;
-  background: var(--color-parchment);
+  background: transparent;
   overflow: hidden;
   position: fixed;
   top: 0;
@@ -21,6 +21,8 @@
   justify-content: space-between;
   padding: 0 48px;
   flex-shrink: 0;
+  position: relative;
+  z-index: 10;
 }
 
 .header-left {
@@ -76,6 +78,7 @@
   height: 4px;
   background: rgba(0, 0, 0, 0.05);
   position: relative;
+  z-index: 10;
 }
 
 /* Main Stage */
@@ -87,13 +90,17 @@
   justify-content: center;
   padding: 40px 20px;
   position: relative;
+  z-index: 2;
 }
 
 /* Animations */
 .card-animation-wrapper {
   position: relative;
   width: 680px;
-  height: 400px; /* Slightly taller */
+  height: 400px;
+  will-change: transform, opacity;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
 }
 
 /* Slide/Fly animations remain same */
@@ -104,28 +111,28 @@
 .fly-up { animation: flyUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
 
 @keyframes slideInRight {
-  from { transform: translateX(120px); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from { transform: translate3d(120px, 0, 0); opacity: 0; }
+  to { transform: translate3d(0, 0, 0); opacity: 1; }
 }
 
 @keyframes slideInLeft {
-  from { transform: translateX(-120px); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from { transform: translate3d(-120px, 0, 0); opacity: 0; }
+  to { transform: translate3d(0, 0, 0); opacity: 1; }
 }
 
 @keyframes slideOutLeft {
-  from { transform: translateX(0); opacity: 1; }
-  to { transform: translateX(-120px); opacity: 0; }
+  from { transform: translate3d(0, 0, 0); opacity: 1; }
+  to { transform: translate3d(-120px, 0, 0); opacity: 0; }
 }
 
 @keyframes slideOutRight {
-  from { transform: translateX(0); opacity: 1; }
-  to { transform: translateX(120px); opacity: 0; }
+  from { transform: translate3d(0, 0, 0); opacity: 1; }
+  to { transform: translate3d(120px, 0, 0); opacity: 0; }
 }
 
 @keyframes flyUp {
-  from { transform: translateY(0) scale(1); opacity: 1; }
-  to { transform: translateY(-80px) scale(0.95); opacity: 0; }
+  from { transform: translate3d(0, 0, 0) scale(1); opacity: 1; }
+  to { transform: translate3d(0, -80px, 0) scale(0.95); opacity: 0; }
 }
 
 /* Study Controls */
@@ -144,14 +151,71 @@
 }
 
 .rating-button {
-  width: 140px; /* Increased from 120px */
-  height: 56px; /* Increased from 48px */
+  width: 140px;
+  height: 56px;
   border-radius: 12px;
   font-weight: 700;
   font-size: 1rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-/* Completion Screen - PREMIUM REDESIGN */
+.rating-button:active {
+  transform: scale(0.95);
+}
+
+.btn-forgot { background-color: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+.btn-forgot:hover { background-color: #fecaca; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15); }
+
+.btn-hard { background-color: #fef3c7; color: #b45309; border-color: #fde68a; }
+.btn-hard:hover { background-color: #fde68a; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15); }
+
+.btn-good { background-color: #dbeafe; color: #1d4ed8; border-color: #bfdbfe; }
+.btn-good:hover { background-color: #bfdbfe; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15); }
+
+.btn-easy { background-color: #d1fae5; color: #047857; border-color: #a7f3d0; }
+.btn-easy:hover { background-color: #a7f3d0; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15); }
+
+.reveal-btn {
+  width: 240px;
+  height: 64px;
+  background: var(--color-navy);
+  color: white;
+  border-radius: 16px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 24px rgba(26, 26, 46, 0.2);
+  border: none;
+}
+
+.reveal-btn:hover {
+  transform: translateY(-2px);
+  background: #252540;
+  box-shadow: 0 12px 32px rgba(26, 26, 46, 0.3);
+}
+
+.reveal-btn:active {
+  transform: translateY(1px);
+}
+
+/* Ensure controls are clickable and not overlapped */
+.study-controls {
+  padding-bottom: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  min-height: 140px;
+  position: relative;
+  z-index: 10; /* Bring above card-stage if overlapping */
+}
 .completion-overlay {
   flex-grow: 1;
   display: flex;

@@ -53,6 +53,8 @@ export async function POST(req: NextRequest) {
         ease_factor: card.easeFactor,
         interval_days: card.intervalDays,
         repetitions: card.repetitions,
+        status: card.status,
+        total_reviews: card.totalReviews,
         next_review_date: card.nextReviewDate,
         last_review_date: card.lastReviewDate,
         created_at: card.createdAt

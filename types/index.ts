@@ -18,6 +18,8 @@ export interface Flashcard {
   easeFactor: number;
   intervalDays: number;
   repetitions: number;
+  status: "not_started" | "shaky" | "mastered";
+  totalReviews: number;
   nextReviewDate: string;
   lastReviewDate: string | null;
   deckId: string;
@@ -30,6 +32,8 @@ export interface Deck {
   subject: string;
   description?: string;
   cardCount: number;
+  lastStudiedAt?: string | null;
+  reviewedToday?: number;
   createdAt: string;
 }
 

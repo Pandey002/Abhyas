@@ -1,9 +1,7 @@
-import Groq from "groq-sdk";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { ExtractionRequest, Flashcard } from "@/types";
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 const SYSTEM_PROMPT = `
 You are a "Master Teacher" AI focused on pedagogical depth and active recall.
@@ -26,36 +24,65 @@ Return ONLY a valid JSON object containing a "cards" array of flashcard objects:
 }
 `;
 
+// Define schema for structured output to ensure reliability
+const FLASHCARD_SCHEMA = {
+  type: SchemaType.OBJECT,
+  properties: {
+    cards: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          front: { type: SchemaType.STRING },
+          back: { type: SchemaType.STRING },
+          type: { type: SchemaType.STRING },
+          tags: {
+            type: SchemaType.ARRAY,
+            items: { type: SchemaType.STRING }
+          }
+        },
+        required: ["front", "back", "type", "tags"]
+      }
+    }
+  },
+  required: ["cards"]
+};
+
 export async function generateFlashcards(req: ExtractionRequest): Promise<Partial<Flashcard>[]> {
   const { topic, intent, content } = req;
   
   const userPrompt = intent === 'quick' 
-    ? `Create 15-20 essential flashcards for the topic "${topic}". 
-       Focus on the absolute core concepts and definitions. One concept per card.
+    ? `Create EXACTLY 10 essential flashcards for the topic "${topic}". 
+       You MUST generate exactly 10 cards, not more, not less. Focus on the absolute core concepts and definitions. One concept per card.
        Front: Question. Back: Direct, 2-line answer.
        Content: ${content}`
-    : `Create 40-60 comprehensive flashcards for the topic "${topic}".
+    : `Create 25-30 comprehensive flashcards for the topic "${topic}". 
        Cover edge cases, specific relationships, and step-by-step logic.
        Include "How does X affect Y?" and "What happens if Z is removed?" type cards.
        Provide 2-3 worked examples.
        Content: ${content}`;
 
-  const chatCompletion = await groq.chat.completions.create({
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: userPrompt }
-    ],
-    model: "llama-3.1-8b-instant", // Updated from decommissioned llama3-8b-8192
-    response_format: { type: "json_object" }
-  });
-
-  const responseText = chatCompletion.choices[0]?.message?.content || "[]";
   try {
-    // Groq JSON mode might return { "cards": [...] } or just the array if handled correctly
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: FLASHCARD_SCHEMA as any,
+      },
+    });
+
+    const result = await model.generateContent({
+      contents: [
+        { role: "user", parts: [{ text: SYSTEM_PROMPT + "\n\n" + userPrompt }] }
+      ]
+    });
+
+    const responseText = result.response.text();
     const parsed = JSON.parse(responseText);
-    return Array.isArray(parsed) ? parsed : (parsed.cards || []);
-  } catch (e) {
-    console.error("Failed to parse AI response:", e);
-    return [];
+    return parsed.cards || [];
+  } catch (e: any) {
+    console.error("Failed to generate or parse Gemini response:", e);
+    // Throw the error so the API route can catch it and return a proper error message to the UI
+    throw new Error(e.message || "Failed to generate flashcards from AI service");
   }
 }

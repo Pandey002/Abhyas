@@ -40,3 +40,32 @@ CREATE POLICY "Allow public update access on decks" ON public.decks FOR UPDATE U
 CREATE POLICY "Allow public read access on flashcards" ON public.flashcards FOR SELECT USING (true);
 CREATE POLICY "Allow public insert access on flashcards" ON public.flashcards FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow public update access on flashcards" ON public.flashcards FOR UPDATE USING (true);
+
+-- -------------------------------------------------------------
+-- MIGRATION: Tracking Logic Refactor (Run these in your DB!)
+-- -------------------------------------------------------------
+
+-- 1. Add fields to Flashcards
+ALTER TABLE public.flashcards ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'not_started';
+ALTER TABLE public.flashcards ADD COLUMN IF NOT EXISTS total_reviews INTEGER DEFAULT 0;
+
+-- 2. Add fields to Decks
+ALTER TABLE public.decks ADD COLUMN IF NOT EXISTS last_studied_at TIMESTAMPTZ;
+ALTER TABLE public.decks ADD COLUMN IF NOT EXISTS reviewed_today INTEGER DEFAULT 0;
+
+-- 3. Global Settings Table (for Library Streak persistence)
+CREATE TABLE IF NOT EXISTS public.global_settings (
+  id TEXT PRIMARY KEY DEFAULT 'default',
+  current_streak INTEGER DEFAULT 1,
+  last_active_date DATE DEFAULT CURRENT_DATE
+);
+
+ALTER TABLE public.global_settings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow public read access on global_settings" ON public.global_settings FOR SELECT USING (true);
+CREATE POLICY "Allow public insert access on global_settings" ON public.global_settings FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update access on global_settings" ON public.global_settings FOR UPDATE USING (true);
+
+-- Ensure a default row exists
+INSERT INTO public.global_settings (id, current_streak, last_active_date)
+VALUES ('default', 1, CURRENT_DATE)
+ON CONFLICT (id) DO NOTHING;
