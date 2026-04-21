@@ -50,15 +50,16 @@ export async function generateFlashcards(req: ExtractionRequest, imageUrls: stri
   const MODELS_TO_TRY = [
     "llama-3.2-11b-vision-instant",
     "llama-3.2-90b-vision-instant",
-    "llama-3.3-70b-versatile", // Fallback for text-processing if vision fails
-    "meta-llama/llama-4-scout-17b-16e-instruct"
+    "meta-llama/Llama-3.2-11B-Vision-Instant",
+    "meta-llama/Llama-3.2-90B-Vision-Instant"
   ];
 
   let lastError: any = null;
 
   for (const modelId of MODELS_TO_TRY) {
     try {
-      console.log(`Groq: Attempting extraction with ${modelId}...`);
+      console.log(`Groq Vision: Attempting extraction with ${modelId}...`);
+      
       const userContent: any[] = [{ type: "text", text: SYSTEM_PROMPT + "\n\n" + basePrompt }];
 
       // Add up to 10 images (pages) for analysis
