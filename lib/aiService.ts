@@ -101,4 +101,7 @@ export async function generateFlashcards(req: ExtractionRequest, imageUrls: stri
   }
 
   throw new Error(`Groq: All vision models failed. Last error: ${lastError?.message || "Unknown error"}`);
+  } catch (err: any) {
+    throw err;
+  }
 }
