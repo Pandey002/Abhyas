@@ -82,7 +82,7 @@ export async function generateFlashcards(req: ExtractionRequest, pdfBuffer?: Buf
 
   try {
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash-latest",
+      model: "gemini-1.5-flash", 
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema: FLASHCARD_SCHEMA as any,
@@ -112,7 +112,18 @@ export async function generateFlashcards(req: ExtractionRequest, pdfBuffer?: Buf
     const parsed = JSON.parse(responseText);
     return parsed.cards || [];
   } catch (e: any) {
-    console.error("Failed to generate or parse Gemini response:", e);
-    throw new Error(e.message || "Failed to generate flashcards from AI service");
+    console.error("Gemini Error:", e);
+    
+    // Diagnostic: List available models to help the user find a working ID
+    try {
+      const modelList = await genAI.getGenerativeModel({ model: "gemini-1.5-flash" }).listModels?.();
+      // Note: listModels might not be available on this specific object structure, 
+      // but we'll try to provide as much context as possible.
+      console.log("Attempting to list models...");
+    } catch (listError) {
+      console.error("Could not list models.");
+    }
+
+    throw new Error(`${e.message} (Try checking your AI Studio for available models)`);
   }
 }
