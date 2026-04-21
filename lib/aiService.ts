@@ -11,7 +11,17 @@ Your goal is to transform the provided images of study material into high-qualit
 - Use Step-by-step logic for worked examples.
 - Call out common pitfalls.
 
-Return ONLY a valid JSON object containing a "cards" array.
+Return ONLY a valid JSON object containing a "cards" array of flashcard objects.
+{
+  "cards": [
+    {
+      "front": "Question or prompt",
+      "back": "Answer or explanation",
+      "type": "concept | formula | date | process | definition | relationship | edge-case",
+      "tags": ["tag1", "tag2"]
+    }
+  ]
+}
 `;
 
 export async function generateFlashcards(req: ExtractionRequest, imageUrls: string[] = []): Promise<Partial<Flashcard>[]> {
@@ -20,13 +30,32 @@ export async function generateFlashcards(req: ExtractionRequest, imageUrls: stri
   let curriculumInstruction = "";
   switch (curriculum) {
     case 'JEE Mains':
-      curriculumInstruction = "Focus on single-concept MCQ-style questions. Prioritize formulae, units, and definitions.";
+      curriculumInstruction = `
+        [CURRICULUM PROFILE: JEE MAINS]
+        DIFFICULTY: High (Formula & Application focused).
+        STYLE: Single-concept numericals, standard tricks, and formula applications.
+        RULE: Frame your flashcards to test speed and direct application. Focus on units, crucial formulas, direct relationships, and factual exceptions. Avoid long derivations.`;
       break;
     case 'JEE Advanced':
-      curriculumInstruction = "Focus on multi-concept, analytical questions including derivations and conceptual traps.";
+      curriculumInstruction = `
+        [CURRICULUM PROFILE: JEE ADVANCED]
+        DIFFICULTY: Extreme (Deep Analytical & Multi-concept).
+        STYLE: Conceptual traps, edge cases, graphical analysis, and deep theoretical proofs.
+        RULE: DO NOT ask simple definition questions. Frame questions that require linking multiple concepts. Focus heavily on 'What if' scenarios, core theoretical limits, and intricate derivations. The cards must be exceptionally challenging.`;
       break;
     case 'NEET':
-      curriculumInstruction = "Focus on factual recall, terminology, and classifications.";
+      curriculumInstruction = `
+        [CURRICULUM PROFILE: NEET]
+        DIFFICULTY: Moderate-High (High Factual Density).
+        STYLE: Medical entrance focused, emphasizing strict factual recall, terminology, and naming conventions.
+        RULE: Focus intensely on biology/chemistry exceptions, sequential mechanisms, and direct memory triggers. Keep questions punchy but highly specific.`;
+      break;
+    case 'CBSE Class 12':
+      curriculumInstruction = `
+        [CURRICULUM PROFILE: CBSE Class 12 Board Exams]
+        DIFFICULTY: Moderate (Subjective & Structural).
+        STYLE: Textbook definitions, standard step-by-step derivations, and logical reasoning.
+        RULE: Frame questions that test the ability to write structured, board-approved answers. Focus on standard 'State and Prove' or 'Define and Explain' formats.`;
       break;
     default:
       curriculumInstruction = "Extract comprehensive flashcards covering key concepts and relationships.";

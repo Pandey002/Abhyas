@@ -36,7 +36,7 @@ const IntentSelector: React.FC<IntentSelectorProps> = ({ onIntentSelect, onProce
           <div className="intent-metadata">
             <span>~3 mins</span>
             <span className="divider">•</span>
-            <span>15-20 fragments</span>
+            <span>10 fragments</span>
           </div>
         </div>
 
@@ -52,7 +52,7 @@ const IntentSelector: React.FC<IntentSelectorProps> = ({ onIntentSelect, onProce
           <div className="intent-metadata">
             <span>~10 mins</span>
             <span className="divider">•</span>
-            <span>40-60 fragments</span>
+            <span>15+ fragments</span>
           </div>
         </div>
       </div>

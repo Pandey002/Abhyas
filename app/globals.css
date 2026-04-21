@@ -104,7 +104,7 @@ body {
 }
 
 .page-wrapper {
-  padding: 60px 48px; /* Increased page verticality */
+  padding: 24px 48px 60px; /* Reduced top padding to lift content */
   max-width: var(--max-width);
   margin: 0 auto;
 }

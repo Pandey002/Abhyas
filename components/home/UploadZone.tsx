@@ -43,7 +43,8 @@ const UploadZone: React.FC<UploadZoneProps> = ({ onFileSelect }) => {
   };
 
   return (
-    <div 
+    <label 
+      htmlFor="file-upload"
       className={`upload-zone card ${dragActive ? 'drag-active' : ''} ${fileName ? 'has-file' : ''}`}
       onDragEnter={handleDrag}
       onDragLeave={handleDrag}
@@ -57,7 +58,7 @@ const UploadZone: React.FC<UploadZoneProps> = ({ onFileSelect }) => {
         accept=".pdf"
         onChange={handleChange}
       />
-      <label htmlFor="file-upload" className="upload-label">
+      <div className="upload-label">
         <div className="upload-icon-container">
           {fileName ? <FileCheck size={32} /> : <FileUp size={32} />}
         </div>
@@ -69,8 +70,8 @@ const UploadZone: React.FC<UploadZoneProps> = ({ onFileSelect }) => {
           )}
           <p className="sub-text">{fileName ? 'Click to change file' : 'OR BROWSE YOUR LIBRARY'}</p>
         </div>
-      </label>
-    </div>
+      </div>
+    </label>
   );
 };
 

@@ -1,7 +1,7 @@
 .upload-zone {
   min-height: 180px; /* Redundant height reduced slightly */
   display: flex;
-  align-items: center;
+  align-items: stretch; /* Stretches the label to make the whole box clickable */
   justify-content: center;
   border: 2px dashed var(--color-border);
   background: var(--color-surface);

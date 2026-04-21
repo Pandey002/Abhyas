@@ -9,6 +9,7 @@ import IntentSelector from '@/components/home/IntentSelector';
 import CurriculumSelector from '@/components/home/CurriculumSelector';
 import LoadingOverlay from '@/components/ui/LoadingOverlay';
 import { convertPdfToImages } from '@/lib/pdf-to-image';
+import toast from 'react-hot-toast';
 
 export default function UploadPage() {
   const router = useRouter();
@@ -82,12 +83,12 @@ export default function UploadPage() {
         setCookingMessage("Extraction complete!");
         router.push('/library');
       } else {
-        alert("Extraction failed: " + (result.error || "Unknown error"));
+        toast.error("Optimization Required: Material is too large or complex for the model. Please try a shorter PDF.");
         setIsCooking(false);
       }
     } catch (error: any) {
       console.error("Extraction error:", error);
-      alert(`CRITICAL_ERROR: ${error.message || "Unknown error"}`);
+      toast.error(`System Error: ${error.message || "Unknown error occurred."}`);
       setIsCooking(false);
     }
   };
@@ -108,7 +109,7 @@ export default function UploadPage() {
       
       <HeroSection 
         title="Extract the Essence"
-        subtitle="Transform static records into living wisdom. New Vision pipeline enabled."
+        subtitle="Provide your content, let AI do the rest."
       />
       <UploadZone onFileSelect={setFile} />
       
