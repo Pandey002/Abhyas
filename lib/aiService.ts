@@ -80,39 +80,66 @@ export async function generateFlashcards(req: ExtractionRequest, pdfBuffer?: Buf
        Include "How does X affect Y?" and "What happens if Z is removed?" type cards.
        Provide 2-3 worked examples.`;
 
-  try {
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash", 
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: FLASHCARD_SCHEMA as any,
-      },
-    });
+  const MODELS_TO_TRY = [
+    "gemini-1.5-flash",
+    "gemini-1.5-flash-latest",
+    "gemini-2.0-flash-exp",
+    "gemini-1.5-pro",
+    "gemini-2.5-flash"
+  ];
 
-    const parts: any[] = [{ text: SYSTEM_PROMPT + "\n\n" + basePrompt }];
+  let lastError: any = null;
 
-    if (pdfBuffer) {
-      console.log("AI_SERVICE: Using native PDF analysis...");
-      parts.push({
-        inlineData: {
-          data: pdfBuffer.toString("base64"),
-          mimeType: "application/pdf"
-        }
+  for (const modelId of MODELS_TO_TRY) {
+    try {
+      console.log(`AI_SERVICE: Attempting extraction with ${modelId}...`);
+      const model = genAI.getGenerativeModel({
+        model: modelId,
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: FLASHCARD_SCHEMA as any,
+        },
       });
-    } else {
-      console.log("AI_SERVICE: Using text-based analysis...");
-      parts.push({ text: `Content to analyze: ${content}` });
+
+      const parts: any[] = [{ text: SYSTEM_PROMPT + "\n\n" + basePrompt }];
+
+      if (pdfBuffer) {
+        parts.push({
+          inlineData: {
+            data: pdfBuffer.toString("base64"),
+            mimeType: "application/pdf"
+          }
+        });
+      } else {
+        parts.push({ text: `Content to analyze: ${content}` });
+      }
+
+      const result = await model.generateContent({
+        contents: [{ role: "user", parts }]
+      });
+
+      const responseText = result.response.text();
+      const parsed = JSON.parse(responseText);
+      console.log(`AI_SERVICE: Success with ${modelId}!`);
+      return parsed.cards || [];
+    } catch (e: any) {
+      lastError = e;
+      const errorMsg = e.message?.toLowerCase() || "";
+      const isRetryable = errorMsg.includes("404") || 
+                          errorMsg.includes("not found") || 
+                          errorMsg.includes("503") || 
+                          errorMsg.includes("unavailable") || 
+                          errorMsg.includes("500");
+      
+      if (isRetryable) {
+        console.warn(`AI_SERVICE: ${modelId} failed with retryable error, moving to next fallback...`);
+        continue;
+      }
+      
+      console.error(`AI_SERVICE: Fatal error with ${modelId}:`, e.message);
+      throw e;
     }
-
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts }]
-    });
-
-    const responseText = result.response.text();
-    const parsed = JSON.parse(responseText);
-    return parsed.cards || [];
-  } catch (e: any) {
-    console.error("Gemini AI Error:", e);
-    throw new Error(e.message || "Failed to generate flashcards from AI service");
   }
+
+  throw new Error(`AI_SERVICE: All fallback models failed. Last error: ${lastError?.message}`);
 }
