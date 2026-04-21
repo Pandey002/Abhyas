@@ -13,7 +13,7 @@ export async function processPDF(
   try {
     // 1. Extract raw text
     console.log('INGESTION: Extracting PDF text...');
-    const data = await pdf(fileBuffer).catch(e => {
+    const data = await pdf(fileBuffer).catch((e: any) => {
       throw new Error(`PDF_PARSE_ERROR: ${e.message}`);
     });
     const rawText = data.text;
@@ -29,7 +29,7 @@ export async function processPDF(
       intent,
       content: cleanedText,
       curriculum
-    }).catch(e => {
+    }).catch((e: any) => {
       throw new Error(`AI_SERVICE_ERROR: ${e.message}`);
     });
 
