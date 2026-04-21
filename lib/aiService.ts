@@ -34,10 +34,10 @@ export async function generateFlashcards(req: ExtractionRequest, imageUrls: stri
 
   const basePrompt = intent === 'quick' 
     ? `Create EXACTLY 10 essential, high-impact flashcards for "${topic}". ${curriculumInstruction} Target EXACTLY 10 cards.`
-    : `Create an ULTRA-DENSE deck for "${topic}". ${curriculumInstruction} 
-       COMMAND: You must extract AT LEAST 6-8 unique, granular flashcards FROM EVERY SINGLE IMAGE provided. 
-       Do not summarize; instead, atomize every definition, derivation, example, and diagram on each page into its own card. 
-       Aim for a final total of 30-40 cards.`;
+    : `Create an ULTRA-EXTENSIVE deck for "${topic}". ${curriculumInstruction} 
+       CRITICAL COMMAND: You MUST generate AT LEAST 25-35 unique flashcards by breaking down every single paragraph, definition, formula, and example. 
+       Do not group concepts together—atomize everything into separate, highly specific cards. 
+       If you output fewer than 25 cards, you fail the extraction.`;
 
   let lastError: any = null;
   let availableModels: string[] = [];
@@ -74,6 +74,7 @@ export async function generateFlashcards(req: ExtractionRequest, imageUrls: stri
           messages: [{ role: "user", content: userContent }],
           response_format: { type: "json_object" },
           temperature: 0.5,
+          max_tokens: 4000,
         });
 
         const responseText = completion.choices[0]?.message?.content || "{}";
