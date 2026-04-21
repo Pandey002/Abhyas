@@ -49,6 +49,8 @@ export default function StudyPage({ params }: { params: Promise<{ id: string }> 
         easeFactor: dbCard.ease_factor,
         intervalDays: dbCard.interval_days,
         repetitions: dbCard.repetitions,
+        status: dbCard.status,
+        totalReviews: dbCard.total_reviews,
         nextReviewDate: dbCard.next_review_date,
         lastReviewDate: dbCard.last_review_date,
         createdAt: dbCard.created_at
@@ -77,6 +79,8 @@ export default function StudyPage({ params }: { params: Promise<{ id: string }> 
           ease_factor: card.easeFactor,
           interval_days: card.intervalDays,
           repetitions: card.repetitions,
+          status: card.status,
+          total_reviews: card.totalReviews,
           next_review_date: card.nextReviewDate,
           last_review_date: card.lastReviewDate,
           created_at: card.createdAt
