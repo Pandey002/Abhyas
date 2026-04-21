@@ -44,22 +44,26 @@ const DeckLibrary: React.FC<DeckLibraryProps> = ({
       <div className={`deck-grid ${variant}`}>
         {decks.map(deck => (
           <Link href={`/study/${deck.id}`} key={deck.id} className={`deck-card card card-hover ${variant} ${deck.isDue ? 'is-due' : ''}`}>
-            {deck.curriculum && (
-              <div className={`curriculum-badge ${deck.curriculum.toLowerCase().replace(/\s+/g, '-')}`}>
-                {deck.curriculum}
+            <div className="card-badges" style={{ position: 'absolute', top: '24px', left: '24px', right: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px', zIndex: 2 }}>
+              {deck.curriculum && (
+                <div className={`curriculum-badge ${deck.curriculum.toLowerCase().replace(/\s+/g, '-')}`} style={{ position: 'static', padding: '4px 10px', fontSize: '0.65rem' }}>
+                  {deck.curriculum}
+                </div>
+              )}
+              
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end', flex: 1 }}>
+                {deck.studyProgress === 100 && (
+                  <div className="due-badge" style={{ position: 'static', background: '#2ecc71', color: 'white', border: 'none', padding: '4px 10px', fontSize: '0.65rem' }}>
+                    Review Complete
+                  </div>
+                )}
+                {deck.isDue && deck.studyProgress !== 100 && (
+                  <div className="due-badge" style={{ position: 'static', padding: '4px 10px', fontSize: '0.65rem' }}>
+                    <Zap size={10} fill="currentColor" /> Due Now
+                  </div>
+                )}
               </div>
-            )}
-            
-            {deck.studyProgress === 100 && (
-              <div className="due-badge" style={{ background: '#2ecc71', color: 'white', border: 'none' }}>
-                Review Complete
-              </div>
-            )}
-            {deck.isDue && deck.studyProgress !== 100 && (
-              <div className="due-badge">
-                <Zap size={10} fill="currentColor" /> Due Now
-              </div>
-            )}
+            </div>
             
             <div className="card-top" style={{ marginTop: deck.curriculum ? '24px' : '0' }}>
               <div className="deck-subject label-caps font-bold tracking-widest text-xs uppercase mb-2 text-coral">{deck.subject}</div>
@@ -78,7 +82,7 @@ const DeckLibrary: React.FC<DeckLibraryProps> = ({
               ></div>
             </div>
 
-            <div className="deck-meta w-full flex justify-between mt-4">
+            <div className="deck-meta" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'space-between', marginTop: '16px' }}>
               <span className="reviewed-text" style={{ color: 'var(--color-grey-mid)' }}>{deck.studyProgress}% Reviewed</span>
               <span className="mastery-text font-bold" style={{ color: 'var(--color-navy)' }}>{deck.masteryPercentage}% Mastered</span>
             </div>
